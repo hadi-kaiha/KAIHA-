@@ -72,14 +72,29 @@ export default function Home() {
           ))}
         </div>
 
-        {/* 37. BHAI SE BAAT + 34. VIRTUAL WARDROBE */}
-        <div className="flex gap-2 mt-4">
-          <button className="flex-1 bg-white text-black p-2 rounded flex items-center justify-center gap-2"><Video size={16}/> Bhai Se Baat</button>
-          <button className="flex-1 bg-gray-700 p-2 rounded flex items-center justify-center gap-2"><Shirt size={16}/> Try On</button>
-        </div>
+        {/* 37. VIDEO CALL + 34. VIRTUAL TRY-ON + 35. 3D TOUR */}
+<div className="flex gap-2 mt-4">
+  <button 
+    onClick={() => alert('Video Call with Seller - Coming in Week 2')}
+    className="flex-1 bg-white text-black p-2 rounded flex items-center justify-center gap-2"
+  >
+    📞 Video Call with Seller
+  </button>
+  <button 
+    onClick={() => alert('Virtual Try-On Camera - Coming in Week 2')}
+    className="flex-1 bg-gray-700 p-2 rounded flex items-center justify-center gap-2"
+  >
+    👔 Virtual Try-On
+  </button>
+</div>
 
-        {/* 35. 3D DUKAN TOUR */}
-        <button className="w-full bg-gray-800 mt-2 p-2 rounded">🏪 Dukaan Ka Tour Dekho</button>
+{/* 35. 3D STORE TOUR */}
+<button 
+  onClick={() => alert('3D Store Tour - Coming Soon')}
+  className="w-full bg-gray-800 mt-2 p-2 rounded"
+>
+  🏪 3D Store Tour
+</button>
 
         <button onClick={() => setCart([...cart, fakeProduct])} className="w-full bg-yellow-500 text-black mt-2 p-2 rounded font-bold">Add to Cart</button>
       </div>
