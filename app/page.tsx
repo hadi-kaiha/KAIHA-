@@ -4,26 +4,62 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, X, Plus, Minus, Mic, Video, Shirt, Sun, Crown } from "lucide-react";
 import Image from "next/image";
 
-// NAVBAR COMPONENT UPAR HI LIKH DIYA
+// EK HI NAVBAR - LOGO + KAIHA SWITCH + ICONS
 function Navbar() {
   const [showLogo, setShowLogo] = useState(true);
 
   useEffect(() => {
     const interval = setInterval(() => {
       setShowLogo((prev) =>!prev);
-    }, 2000);
+    }, 2500); // 2.5 sec
     return () => clearInterval(interval);
   }, []);
 
   return (
-    <nav className="fixed top-0 left-0 w-full h-16 bg-black border-b border-gray-800 flex items-center justify-center z-50">
-      <div className="relative w-40 h-10">
-        <div className={`absolute inset-0 transition-opacity duration-500 ${showLogo? "opacity-100" : "opacity-0"}`}>
-          <Image src="/IMG-20200913-WA5443.jpg" alt="Logo" fill className="object-contain" />
-        </div>
-        <div className={`absolute inset-0 flex items-center justify-center text-2xl font-bold text-white tracking-widest transition-opacity duration-500 ${showLogo? "opacity-0" : "opacity-100"}`}>
-          KAIHA
-        </div>
+    <nav className="fixed top-0 left-0 w-full h-16 bg-black border-b border-gray-800 flex items-center justify-between px-4 z-50">
+      
+      {/* LEFT: Logo/KAIHA switch */}
+      <div className="relative w-32 h-10 flex items-center">
+        <AnimatePresence mode="wait">
+          {showLogo? (
+            <motion.div
+              key="logo"
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.4 }}
+              className="relative w-full h-9"
+            >
+              <Image src="/IMG-20200913-WA5443.jpg" alt="Logo" fill className="object-contain" />
+            </motion.div>
+          ) : (
+            <motion.h1
+              key="text"
+              className="text-xl font-bold tracking-widest"
+              style={{
+                background: "linear-gradient(90deg, #A855F7, #EAB308)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent"
+              }}
+              initial={{ opacity: 0, y: 5 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -5 }}
+              transition={{ duration: 0.4 }}
+            >
+              KAIHA
+            </motion.h1>
+          )}
+        </AnimatePresence>
+      </div>
+
+      {/* RIGHT: Icons */}
+      <div className="flex gap-5">
+        <Mic className="w-6 h-6 cursor-pointer" /> {/* 33. VOICE SHOP */}
+        <Crown className="w-6 h-6 cursor-pointer" /> {/* 40. BLACK CARD */}
+        <button onClick={() => setCartOpen(true)} className="relative">
+          <ShoppingCart className="w-6 h-6" />
+          {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">{cart.length}</span>}
+        </button>
       </div>
     </nav>
   );
@@ -46,20 +82,9 @@ export default function Home() {
   return (
     <div className="bg-black text-white min-h-screen font-sans pt-16"> {/* pt-16 navbar ke liye */}
 
-      <Navbar /> {/* YEH NAYA NAVBAR */}
+      <Navbar /> {/* SIRF YE 1 NAVBAR RAHEGA */}
 
-      {/* NAVBAR ICONS WALA BAR */}
-      <nav className="flex justify-between items-center p-4 border-b border-gray-800 sticky top-16 bg-black z-40">
-        <h1 className="text-2xl font-bold tracking-widest">KAIHA</h1>
-        <div className="flex gap-4">
-          <Mic /> {/* 33. VOICE SHOP */}
-          <Crown size={20} /> {/* 40. BLACK CARD */}
-          <button onClick={() => setCartOpen(true)} className="relative">
-            <ShoppingCart />
-            {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 text-xs flex items-center justify-center">{cart.length}</span>}
-          </button>
-        </div>
-      </nav>
+      {/* 2ND NAVBAR HATA DIYA - WO WALA DIV DELETE */}
 
       {/* 39. WEATHER SUGGESTION */}
       <div className="bg-gray-800 text-center p-2 text-sm">☀️ Aaj Garmi Hai Karachi Mein - Lawn Kurte Dekhein</div>
@@ -147,5 +172,4 @@ export default function Home() {
       </footer>
     </div>
   );
-  }
-        
+                        }
