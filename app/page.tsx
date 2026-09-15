@@ -1,7 +1,33 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, X, Plus, Minus, Mic, Video, Shirt, Sun, Crown } from "lucide-react";
+import Image from "next/image";
+
+// NAVBAR COMPONENT UPAR HI LIKH DIYA
+function Navbar() {
+  const [showLogo, setShowLogo] = useState(true);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setShowLogo((prev) =>!prev);
+    }, 2000);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <nav className="fixed top-0 left-0 w-full h-16 bg-black border-b border-gray-800 flex items-center justify-center z-50">
+      <div className="relative w-40 h-10">
+        <div className={`absolute inset-0 transition-opacity duration-500 ${showLogo? "opacity-100" : "opacity-0"}`}>
+          <Image src="/IMG-20200913-WA5443.jpg" alt="Logo" fill className="object-contain" />
+        </div>
+        <div className={`absolute inset-0 flex items-center justify-center text-2xl font-bold text-white tracking-widest transition-opacity duration-500 ${showLogo? "opacity-0" : "opacity-100"}`}>
+          KAIHA
+        </div>
+      </div>
+    </nav>
+  );
+}
 
 // FAKE DATA - BAAD MEIN SELLER KHUD DALEGA
 const fakeProduct = {
@@ -18,10 +44,12 @@ export default function Home() {
   const [selectedColor, setSelectedColor] = useState("white");
 
   return (
-    <div className="bg-black text-white min-h-screen font-sans">
+    <div className="bg-black text-white min-h-screen font-sans pt-16"> {/* pt-16 navbar ke liye */}
 
-      {/* NAVBAR */}
-      <nav className="flex justify-between items-center p-4 border-b border-gray-800 sticky top-0 bg-black z-40">
+      <Navbar /> {/* YEH NAYA NAVBAR */}
+
+      {/* NAVBAR ICONS WALA BAR */}
+      <nav className="flex justify-between items-center p-4 border-b border-gray-800 sticky top-16 bg-black z-40">
         <h1 className="text-2xl font-bold tracking-widest">KAIHA</h1>
         <div className="flex gap-4">
           <Mic /> {/* 33. VOICE SHOP */}
@@ -56,8 +84,6 @@ export default function Home() {
           <motion.div
             className="w-6 h-6 rounded-full absolute top-4 right-4 border-2 border-white"
             style={{ backgroundColor: selectedColor }}
-            animate={{ backgroundColor: selectedColor === "white"? fakeProduct.colors : [selectedColor] }}
-            transition={{ repeat: Infinity, duration: 3 }}
           />
         </div>
 
@@ -121,4 +147,4 @@ export default function Home() {
       </footer>
     </div>
   );
-}
+            }
