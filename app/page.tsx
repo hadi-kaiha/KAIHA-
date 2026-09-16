@@ -1,190 +1,180 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, X, Plus, Minus, Mic, Video, Shirt, Search, Bell, Heart, User, PlayCircle } from "lucide-react";
+import { ShoppingCart, X, Plus, Minus, Mic, Search, Bell, Heart, User, ArrowLeft, Star, Wallet, Smartphone, Tag, LogOut, Package, Upload } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
-// 3 ALAG ALAG DATA SETS
+// DUMMY DATA WITH SELLER FIELD
 const fashionCategories = [
-  { name: "GEN Z DRIP", img: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=400" },
-  { name: "WINTER EDIT", img: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=400" },
-  { name: "MEN", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400" },
-  { name: "WOMEN", img: "https://images.unsplash.com/photo-1496745955548-2b7a1993b7a7?q=80&w=400" },
+  { name: "GEN Z DRIP", img: "https://images.unsplash.com/photo-1512436991641-6745cdb1723f?q=80&w=400", key: "genz" },
+  { name: "WINTER EDIT", img: "https://images.unsplash.com/photo-1489987707025-afc232f7ea0f?q=80&w=400", key: "winter" },
+  { name: "MEN", img: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?q=80&w=400", key: "men" },
+  { name: "WOMEN", img: "https://images.unsplash.com/photo-1496745955548-2b7a1993b7a7?q=80&w=400", key: "women" },
+  { name: "SUMMER COLLECTION", img: "https://images.unsplash.com/photo-1529139574466-a30302731d8b?q=80&w=400", key: "summer" },
+  { name: "FOOTWEAR", img: "https://images.unsplash.com/photo-1542291026-7eec264c27ff?q=80&w=400", key: "footwear" },
+  { name: "CHILD", img: "https://images.unsplash.com/photo-1503454537195-1dcabb73ffb9?q=80&w=400", key: "child" },
+  { name: "ESSENTIALS", img: "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=400", key: "essentials" },
+  { name: "UNDERGARMENTS", img: "https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?q=80&w=400", key: "underwear" },
+  { name: "OLD MONEY COLLECTION", img: "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?q=80&w=400", key: "oldmoney" },
 ]
-const beautyCategories = [
-  { name: "MAKEUP", img: "https://images.unsplash.com/photo-1596464716127-f2a82984de30?q=80&w=400" },
-  { name: "SKINCARE", img: "https://images.unsplash.com/photo-1556228720-195a672e8a03?q=80&w=400" },
-  { name: "HAIRCARE", img: "https://images.unsplash.com/photo-1522338140262-f46f5913618a?q=80&w=400" },
-  { name: "FRAGRANCE", img: "https://images.unsplash.com/photo-1594035910387-fea47794261f?q=80&w=400" },
-]
-const homeCategories = [
-  { name: "HOME DECOR", img: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=400" },
-  { name: "BEDDING", img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?q=80&w=400" },
-  { name: "KITCHEN", img: "https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?q=80&w=400" },
-  { name: "LIGHTING", img: "https://images.unsplash.com/photo-1507473885765-e6ed057f782c?q=80&w=400" },
-]
+const beautyCategories = [{ name: "MAKEUP", img: "https://images.unsplash.com/photo-1596464716127-f2a82984de30?q=80&w=400" }];
+const homeCategories = [{ name: "HOME DECOR", img: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=400" }];
 
-const products = {
-  Fashion: { name: "Premium Kurta", price: 1999, img: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?q=80&w=400" },
-  Beauty: { name: "Glam Lipstick Set", price: 899, img: "https://images.unsplash.com/photo-1583241800694-2f2b6cbcba3f?q=80&w=400" },
-  Home: { name: "Decor Vase Set", price: 2499, img: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=400" },
+const categoryProducts = {
+  genz: { title: "GENZ OUTFITS", male: [{name: "Men's Oversized Tee", price: 1299, img: "https://images.unsplash.com/photo-1583743814966-8936f5b7be1a?q=80&w=400", seller: "Demo Shop"}], female: [{name: "Women's Crop Top", price: 1899, img: "https://images.unsplash.com/photo-1525507119028-ed4c629a60a3?q=80&w=400", seller: "Demo Shop"}] },
 }
 
-// KAIHA TV VIDEOS
-const kaihaTVVideos = [
-  { id: 1, title: "3 Ways to Style This Kurta", thumbnail: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?q=80&w=600", product: "Premium Kurta", price: 1999 },
-  { id: 2, title: "Party Makeup in 5 Minutes", thumbnail: "https://images.unsplash.com/photo-1596464716127-f2a82984de30?q=80&w=600", product: "Glam Lipstick Set", price: 899 },
-  { id: 3, title: "Home Decor Hacks", thumbnail: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=600", product: "Decor Vase Set", price: 2499 },
-]
+const products = { Fashion: { name: "Premium Kurta", price: 1999, img: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?q=80&w=400", seller: "KAIHA Official" } }
 
 export default function Home() {
   const router = useRouter();
+  const [page, setPage] = useState("home");
   const [cart, setCart] = useState<any[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [showLogo, setShowLogo] = useState(true);
   const [activeTab, setActiveTab] = useState("Fashion");
+  const [categoryPage, setCategoryPage] = useState<string | null>(null);
+  const [productDetail, setProductDetail] = useState<any | null>(null);
+  const [selectedSize, setSelectedSize] = useState("M");
+  const [search, setSearch] = useState("");
+  const [delivery] = useState(200);
+  const [coupon, setCoupon] = useState("");
+  const [user, setUser] = useState<any>(null);
+
+  // SELLER STATE
+  const [sellerStep, setSellerStep] = useState(1);
+  const [shopName, setShopName] = useState(""); // YE SELLER KHUD DALEGA
+  const [selectedMain, setSelectedMain] = useState("Fashion");
+  const [selectedSub, setSelectedSub] = useState("");
 
   useEffect(() => {
     const interval = setInterval(() => setShowLogo((prev) =>!prev), 2500);
     return () => clearInterval(interval);
   }, []);
 
+  const subCategories = {
+    Fashion: fashionCategories.map(c=>c.name),
+    Beauty: beautyCategories.map(c=>c.name),
+    Home: homeCategories.map(c=>c.name)
+  }
+
+  const subtotal = cart.reduce((acc, item) => acc + (item.price * item.qty), 0);
+  const fee = Math.round(subtotal * 0.15);
+  const couponDiscount = coupon === "KAIHA100"? 100 : 0;
+  const grandTotal = Math.round(subtotal + fee + delivery - couponDiscount);
+
+  // 1. PRODUCT DETAIL - SELLER NAME SHOW
+  if(productDetail){
+    return (
+      <div className="bg-black text-white min-h-screen">
+        <nav className="flex items-center gap-4 p-4 border-b border-gray-800 sticky top-0 bg-black z-50">
+          <ArrowLeft onClick={() => setProductDetail(null)} className="cursor-pointer"/>
+          <h1 className="text-lg font-bold">Product Details</h1>
+        </nav>
+        <div className="p-4">
+          <Image src={productDetail.img} width={400} height={400} className="w-full h-96 object-cover rounded-xl" alt={productDetail.name} unoptimized />
+          <p className="text-gray-400 text-sm mt-2">This item from: <span className="text-yellow-500 font-bold">{productDetail.seller}</span></p>
+          <h1 className="text-2xl font-bold mt-1">{productDetail.name}</h1>
+          <p className="text-3xl font-bold mt-3">Rs. {productDetail.price}</p>
+          <div className="mt-6"><p className="font-semibold mb-2">Select Size</p><div className="flex gap-3">{["S", "M", "L", "XL", "XXL"].map(size => (<button key={size} onClick={() => setSelectedSize(size)} className={`w-12 h-12 border-2 rounded-full font-bold ${selectedSize === size? 'border-yellow-500 bg-yellow-500 text-black' : 'border-gray-700'}`}>{size}</button>))}</div></div>
+          <button onClick={() => {setCart([...cart, {...productDetail, qty: 1, size: selectedSize}]); setProductDetail(null);}} className="w-full bg-yellow-500 text-black mt-6 p-4 rounded-lg font-bold text-lg">Add to Cart</button>
+        </div>
+      </div>
+    )
+  }
+
+  // 2. SELLER PANEL - 3 STEPS
+  if(page === "admin"){
+    // STEP 1: SHOP NAME INPUT
+    if(!shopName){
+      return (
+        <div className="bg-black text-white min-h-screen p-4 flex-col justify-center">
+          <nav className="flex items-center gap-4 mb-6"><ArrowLeft onClick={() => setPage("home")} className="cursor-pointer"/><h1 className="text-xl font-bold">Seller Panel</h1></nav>
+          <h1 className="text-2xl font-bold mb-4 text-center">Welcome Seller!</h1>
+          <p className="text-center text-gray-400 mb-4">Pehle apni Shop/Brand ka naam likho</p>
+          <input value={shopName} onChange={(e)=>setShopName(e.target.value)} placeholder="e.g: Zara Style, Old Money Co" className="w-full bg-gray-800 p-3 rounded mb-3"/>
+          <button onClick={()=>setSellerStep(2)} disabled={!shopName} className="w-full bg-yellow-500 text-black p-3 rounded font-bold disabled:opacity-50">Continue</button>
+        </div>
+      )
+    }
+
+    // STEP 2: CHOOSE SECTION
+    if(sellerStep === 2){
+      return (
+        <div className="bg-black text-white min-h-screen p-4">
+          <nav className="flex items-center gap-4 mb-6"><ArrowLeft onClick={() => setShopName("")} className="cursor-pointer"/><h1 className="text-xl font-bold">{shopName} Panel</h1></nav>
+          <h2 className="text-lg font-bold mb-3">Kis Section me Product Add Karna Hai?</h2>
+
+          <div className="flex gap-2 mb-4 overflow-x-auto">
+            {["Fashion", "Beauty", "Home"].map(c=><button key={c} onClick={()=>{setSelectedMain(c); setSelectedSub("")}} className={`px-4 py-2 rounded-full whitespace-nowrap ${selectedMain===c?'bg-white text-black':'bg-gray-800'}`}>{c}</button>)}
+          </div>
+
+          <div className="flex gap-3 overflow-x-auto pb-2">
+            {subCategories[selectedMain as keyof typeof subCategories].map(cat=>(
+              <div key={cat} onClick={()=>setSelectedSub(cat)} className={`flex flex-col items-center gap-1 min-w-[80px] cursor-pointer p-2 rounded-lg ${selectedSub===cat?'bg-yellow-500 text-black':'bg-gray-900'}`}>
+                <div className="w-16 h-16 bg-gray-700 rounded-full"></div>
+                <p className="text-[11px] text-center">{cat}</p>
+              </div>
+            ))}
+          </div>
+
+          {selectedSub && <button onClick={()=>setSellerStep(3)} className="w-full bg-green-500 text-black p-3 rounded font-bold mt-6">Add Product in {selectedSub}</button>}
+        </div>
+      )
+    }
+
+    // STEP 3: ADD PRODUCT
+    if(sellerStep === 3){
+      return (
+        <div className="bg-black text-white min-h-screen p-4">
+          <nav className="flex items-center gap-4 mb-6"><ArrowLeft onClick={() => setSellerStep(2)} className="cursor-pointer"/><h1 className="text-xl font-bold">Add Product</h1></nav>
+          <p className="text-gray-400 mb-1">Shop: <span className="text-yellow-500">{shopName}</span></p>
+          <p className="text-gray-400 mb-3">Section: <span className="text-yellow-500">{selectedSub}</span></p>
+
+          <div className="bg-gray-900 p-4 rounded-lg">
+            <input placeholder="Product Name" className="w-full bg-gray-800 p-2 rounded mb-2"/>
+            <input placeholder="Price" type="number" className="w-full bg-gray-800 p-2 rounded mb-2"/>
+            <input placeholder="Image URL" className="w-full bg-gray-800 p-2 rounded mb-3"/>
+            <button onClick={() => alert(`Product added to ${selectedSub} by ${shopName}`)} className="w-full bg-green-500 text-black p-3 rounded font-bold flex items-center justify-center gap-2"><Upload size={18}/>Add Product</button>
+          </div>
+        </div>
+      )
+    }
+  }
+
+  // HOME PAGE
   const currentCategories = activeTab === "Fashion"? fashionCategories : activeTab === "Beauty"? beautyCategories : homeCategories;
   const currentProduct = products[activeTab as keyof typeof products];
 
-  // Filter videos based on tab
-  const filteredVideos = kaihaTVVideos.filter(v =>
-    activeTab === "Fashion"? v.product.includes("Kurta") :
-    activeTab === "Beauty"? v.product.includes("Lipstick") :
-    v.product.includes("Vase")
-  );
-
   return (
     <div className="bg-black text-white min-h-screen font-sans">
-
-      {/* NAVBAR */}
       <nav className="flex justify-between items-center p-4 border-b border-gray-800 sticky top-0 bg-black z-50">
-        <div className="relative w-32 h-10 flex items-center">
-          <AnimatePresence mode="wait">
-            {showLogo? (
-              <motion.div key="logo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="relative w-full h-9">
-                <Image src="/IMG-20200913-WA5443.jpg" alt="KAIHA Logo" fill className="object-contain" />
-              </motion.div>
-            ) : (
-              <motion.h1 key="text" className="text-2xl font-bold tracking-widest bg-gradient-to-r from-purple-500 to-yellow-500 bg-clip-text text-transparent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-                KAIHA
-              </motion.h1>
-            )}
-          </AnimatePresence>
-        </div>
+        <h1 className="text-2xl font-bold bg-gradient-to-r from-purple-500 to-yellow-500 bg-clip-text text-transparent">KAIHA</h1>
         <div className="flex gap-4">
-          <Bell className="w-6 h-6 cursor-pointer" />
-          <Heart className="w-6 h-6 cursor-pointer" />
-          <User onClick={() => router.push('/profile')} className="w-6 h-6 cursor-pointer" />
-          <button onClick={() => setCartOpen(true)} className="relative">
-            <ShoppingCart className="w-6 h-6" />
-            {cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">{cart.length}</span>}
-          </button>
+          <User onClick={() => setPage("profile")} className="w-6 h-6 cursor-pointer" />
+          <Package onClick={() => {setPage("admin"); setSellerStep(1); setShopName("")}} className="w-6 h-6 cursor-pointer text-green-500" />
+          <button onClick={() => setCartOpen(true)} className="relative"><ShoppingCart className="w-6 h-6" />{cart.length > 0 && <span className="absolute -top-2 -right-2 bg-red-500 rounded-full w-5 h-5 text-xs flex items-center justify-center font-bold">{cart.length}</span>}</button>
         </div>
       </nav>
 
-      {/* SEARCH BAR */}
-      <div className="p-3 bg-black">
-        <div className="flex items-center bg-gray-900 rounded-full px-4 py-2">
-          <Search className="w-5 h-5 text-gray-400" />
-          <input placeholder="Search for products, brands and more" className="bg-transparent outline-none flex-1 ml-2 text-sm" />
-          <Mic className="w-5 h-5 text-gray-400 cursor-pointer" />
-        </div>
-      </div>
+      <div className="flex gap-2 px-3 py-2 overflow-x-auto">{["Fashion", "Beauty", "Home"].map(tab => (<button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 rounded-full text-sm font-semibold ${activeTab === tab? 'bg-white text-black' : 'bg-gray-800'}`}>{tab}</button>))}</div>
+      <div className="flex gap-3 px-3 py-3 overflow-x-auto">{currentCategories.map(cat => (<div key={cat.name} onClick={() => cat.key && setCategoryPage(cat.key)} className="flex flex-col items-center gap-1 min-w-[80px] cursor-pointer"><div className="w-16 h-16 bg-gray-800 rounded-full overflow-hidden"><Image src={cat.img} alt={cat.name} width={64} height={64} className="object-cover w-full h-full" unoptimized /></div><p className="text-[11px] text-center">{cat.name}</p></div>))}</div>
 
-      {/* TABS */}
-      <div className="flex gap-2 px-3 py-2 overflow-x-auto">
-        {["Fashion", "Beauty", "Home"].map(tab => (
-          <button key={tab} onClick={() => setActiveTab(tab)} className={`px-4 py-2 rounded-full text-sm font-semibold whitespace-nowrap ${activeTab === tab? 'bg-white text-black' : 'bg-gray-800 text-white border border-gray-700'}`}>
-            {tab}
-          </button>
-        ))}
-      </div>
-
-      {/* CATEGORIES */}
-      <div className="flex gap-3 px-3 py-3 overflow-x-auto">
-        {currentCategories.map(cat => (
-          <div key={cat.name} className="flex flex-col items-center gap-1 min-w-[80px] cursor-pointer">
-            <div className="w-16 h-16 bg-gray-800 rounded-full overflow-hidden border-2 border-gray-700">
-              <Image src={cat.img} alt={cat.name} width={64} height={64} className="object-cover w-full h-full" unoptimized />
-            </div>
-            <p className="text-[11px] text-center font-medium">{cat.name}</p>
-          </div>
-        ))}
-      </div>
-
-      {/* KAIHA TV SECTION - NAYA */}
-      <div className="px-4 py-4 border-t border-gray-800">
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-xl font-bold flex items-center gap-2"><PlayCircle className="w-6 h-6 text-red-500" /> KAIHA TV</h2>
-          <p className="text-xs text-gray-400">Shop from Videos</p>
-        </div>
-        <div className="flex gap-3 overflow-x-auto pb-2">
-          {filteredVideos.map(video => (
-            <div key={video.id} className="min-w-[280px] bg-gray-900 rounded-xl overflow-hidden">
-              <div className="relative w-full h-40">
-                <Image src={video.thumbnail} alt={video.title} fill className="object-cover" unoptimized />
-                <PlayCircle className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-12 h-12 text-white opacity-80" />
-              </div>
-              <div className="p-3">
-                <p className="font-semibold text-sm">{video.title}</p>
-                <div className="flex items-center justify-between mt-2">
-                  <div>
-                    <p className="text-xs text-gray-400">{video.product}</p>
-                    <p className="text-sm font-bold">Rs. {video.price}</p>
-                  </div>
-                  <button onClick={() => setCart([...cart, {name: video.product, price: video.price}])} className="bg-yellow-500 text-black text-xs px-3 py-1.5 rounded-full font-bold">
-                    Add to Cart
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* BANNER */}
-      <div className="p-3">
-        <div className="relative w-full h-40 rounded-xl overflow-hidden">
-          <Image src={activeTab === "Fashion"? "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200" : activeTab === "Beauty"? "https://images.unsplash.com/photo-1596464716127-f2a82984de30?q=80&w=1200" : "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1200"} alt="Banner" fill className="object-cover" unoptimized />
-          <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent p-6">
-            <h2 className="text-2xl font-bold">{activeTab === "Fashion" && "Let's Get THIS PARTY STARTED!"}{activeTab === "Beauty" && "Glow Up This Season"}{activeTab === "Home" && "Make Your Home Beautiful"}</h2>
-            <p className="text-lg">{activeTab === "Fashion" && "Slay New Year Parties"}{activeTab === "Beauty" && "Best Makeup & Skincare"}{activeTab === "Home" && "Decor & Essentials"}</p>
-          </div>
-        </div>
-      </div>
-
-      {/* PRODUCT SECTION */}
-      <div className="p-6">
-        <p className="text-gray-400 text-sm mb-2">This item from: Seller Shop</p>
-        <div className="relative">
-          <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 3 }} className="w-60 mx-auto">
-            <Image src={currentProduct.img} alt={currentProduct.name} width={240} height={360} className="rounded-lg" unoptimized />
-          </motion.div>
-        </div>
-        <h2 className="text-center text-xl mt-4">{currentProduct.name}</h2>
-        <p className="text-center text-gray-400">Rs. {currentProduct.price}</p>
-        <button onClick={() => setCart([...cart, currentProduct])} className="w-full bg-yellow-500 text-black mt-4 p-3 rounded font-bold">Add to Cart</button>
-      </div>
+      <div className="p-6"><p className="text-gray-400 text-sm mb-2">This item from: <span className="text-yellow-500">{currentProduct.seller}</span></p><div onClick={() => setProductDetail(currentProduct)} className="relative cursor-pointer"><motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 3 }} className="w-60 mx-auto"><Image src={currentProduct.img} alt={currentProduct.name} width={240} height={360} className="rounded-lg" unoptimized /></motion.div></div><h2 className="text-center text-xl mt-4">{currentProduct.name}</h2><p className="text-center text-gray-400">Rs. {currentProduct.price}</p><button onClick={() => setCart([...cart, {...currentProduct, qty: 1, size: "M"}])} className="w-full bg-yellow-500 text-black mt-4 p-3 rounded font-bold">Add to Cart</button></div>
 
       {/* CART */}
       <AnimatePresence>
       {cartOpen && (
-        <motion.div initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}} className="fixed top-0 right-0 w-80 h-full bg-gray-900 p-4 z-50 overflow-y-auto">
-          <X onClick={() => setCartOpen(false)} className="mb-4 cursor-pointer"/>
-          <h2 className="text-xl mb-4">Your Cart ({cart.length})</h2>
-          {cart.map((item, i) => <p key={i}>{item.name} - Rs.{item.price}</p>)}
+        <motion.div initial={{x:"100%"}} animate={{x:0}} exit={{x:"100%"}} className="fixed top-0 right-0 w-80 h-full bg-gray-900 p-4 z-50">
+          <div className="flex justify-between items-center mb-4"><h2 className="text-xl font-bold">Your Cart ({cart.length})</h2><X onClick={() => setCartOpen(false)} className="cursor-pointer"/></div>
+          <div className="border-t border-gray-700 pt-3 mt-2">
+            <div className="flex justify-between font-bold text-lg"><span>Grand Total:</span><span>Rs.{grandTotal}</span></div>
+            <button onClick={() => alert(`Order Placed! Rs.${grandTotal}`)} className="w-full bg-green-500 text-black p-3 rounded font-bold mt-3">Place Order</button>
+          </div>
         </motion.div>
       )}
       </AnimatePresence>
-
-      <footer className="text-center py-10 text-gray-500 text-sm">Founded by HADI - 19, Sukkur Pakistan. Building Billions.</footer>
     </div>
   );
-      }
+    }
