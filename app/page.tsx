@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { ShoppingCart, X, Plus, Minus, Mic, Video, Shirt, Search, Bell, Heart, User, PlayCircle } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/lib/supabase"; // <-- ADDED
 
 // 3 ALAG ALAG DATA SETS
 const fashionCategories = [
@@ -45,11 +46,21 @@ export default function Home() {
   const [activeTab, setActiveTab] = useState("Fashion");
   const [showRiderAlert, setShowRiderAlert] = useState(false);
   const [liveRider, setLiveRider] = useState<any>(null);
+  const [sellerProducts, setSellerProducts] = useState<any[]>([]); // <-- ADDED
 
   useEffect(() => {
     const interval = setInterval(() => setShowLogo((prev) =>!prev), 2500);
     return () => clearInterval(interval);
   }, []);
+
+  // SELLER PRODUCTS FETCH - NEW ADDED
+  useEffect(()=>{
+    const fetchSellerProducts = async()=>{
+      const {data} = await supabase.from("kaiha_products").select("*, kaiha_sellers!inner(shop_name, is_open)").eq("kaiha_sellers.is_open", true).gt("stock",0);
+      if(data) setSellerProducts(data);
+    }
+    fetchSellerProducts();
+  },[]);
 
   // RIDER LIVE TRACKING LISTENER - NEW SYSTEM
   useEffect(()=>{
@@ -131,6 +142,24 @@ export default function Home() {
           </div>
         ))}
       </div>
+
+      {/* SELLER LIVE PRODUCTS - NEW ADDED SECTION */}
+      {sellerProducts.length > 0 && (
+        <div className="px-4 py-4 border-t border-gray-800">
+          <h2 className="text-xl font-black text-yellow-500">LIVE FROM SELLERS 🔴</h2>
+          <div className="grid grid-cols-2 gap-3 mt-3">
+            {sellerProducts.map(p=>(
+              <div key={p.id} className="bg-[#101828] p-3 rounded-xl border border-yellow-500/20">
+                <p className="font-bold text-sm">{p.name}</p>
+                <p className="text-yellow-500 text-sm font-bold">Rs. {p.price}</p>
+                <p className="text-[10px] text-gray-400">{p.kaiha_sellers?.shop_name} • {p.stock} left</p>
+                <p className="text-[10px] text-gray-500">{p.sizes?.join("/")} | {p.colors?.join(", ")}</p>
+                <button onClick={()=>setCart([...cart, {...p, name:p.name}])} className="w-full bg-yellow-500 text-black mt-2 p-2 rounded-xl font-black text-xs">ORDER NOW</button>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* KAIHA TV SECTION */}
       <div className="px-4 py-4 border-t border-gray-800">
@@ -219,4 +248,4 @@ export default function Home() {
       <footer className="text-center py-10 text-gray-500 text-sm">Founded by HADI - 19, Sukkur Pakistan. Building Billions.</footer>
     </div>
   );
-         }
+        }
