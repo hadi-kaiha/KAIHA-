@@ -31,7 +31,6 @@ const products = {
   Home: { name: "Decor Vase Set", price: 2499, img: "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=400" },
 }
 
-// KAIHA TV VIDEOS
 const kaihaTVVideos = [
   { id: 1, title: "3 Ways to Style This Kurta", thumbnail: "https://images.unsplash.com/photo-1618354691373-d851c5c3a990?q=80&w=600", product: "Premium Kurta", price: 1999 },
   { id: 2, title: "Party Makeup in 5 Minutes", thumbnail: "https://images.unsplash.com/photo-1596464716127-f2a82984de30?q=80&w=600", product: "Glam Lipstick Set", price: 899 },
@@ -44,16 +43,30 @@ export default function Home() {
   const [cartOpen, setCartOpen] = useState(false);
   const [showLogo, setShowLogo] = useState(true);
   const [activeTab, setActiveTab] = useState("Fashion");
+  const [showRiderAlert, setShowRiderAlert] = useState(false);
+  const [liveRider, setLiveRider] = useState<any>(null);
 
   useEffect(() => {
     const interval = setInterval(() => setShowLogo((prev) =>!prev), 2500);
     return () => clearInterval(interval);
   }, []);
 
+  // RIDER LIVE TRACKING LISTENER - NEW SYSTEM
+  useEffect(()=>{
+    const checkRider = setInterval(()=>{
+      const live = localStorage.getItem("kaiha_live");
+      const status = localStorage.getItem("kaiha_order_status");
+      if(live && status==="on_the_way"){
+        setLiveRider(JSON.parse(live));
+        setShowRiderAlert(true);
+      }
+    }, 2000);
+    return ()=>clearInterval(checkRider);
+  },[]);
+
   const currentCategories = activeTab === "Fashion"? fashionCategories : activeTab === "Beauty"? beautyCategories : homeCategories;
   const currentProduct = products[activeTab as keyof typeof products];
 
-  // Filter videos based on tab
   const filteredVideos = kaihaTVVideos.filter(v =>
     activeTab === "Fashion"? v.product.includes("Kurta") :
     activeTab === "Beauty"? v.product.includes("Lipstick") :
@@ -119,7 +132,7 @@ export default function Home() {
         ))}
       </div>
 
-      {/* KAIHA TV SECTION - NAYA */}
+      {/* KAIHA TV SECTION */}
       <div className="px-4 py-4 border-t border-gray-800">
         <div className="flex items-center justify-between mb-3">
           <h2 className="text-xl font-bold flex items-center gap-2"><PlayCircle className="w-6 h-6 text-red-500" /> KAIHA TV</h2>
@@ -184,7 +197,26 @@ export default function Home() {
       )}
       </AnimatePresence>
 
+      {/* AUTO RIDER NOTIFICATION POPUP - NEW */}
+      {showRiderAlert && liveRider && (
+        <div className="fixed bottom-0 left-0 right-0 bg-[#101828] border-t-2 border-green-500 p-4 rounded-t-2xl shadow-2xl z-[100]">
+          <div className="flex justify-between items-start">
+            <div>
+              <h3 className="font-black text-green-400 text-lg">Your order is on the way! 🏍️</h3>
+              <p className="text-sm text-white mt-1">{liveRider.riderName} is coming with your order</p>
+              <p className="text-xs text-gray-400">Bike: {liveRider.bikeNo} | {liveRider.phone}</p>
+            </div>
+            <button onClick={()=>setShowRiderAlert(false)} className="text-gray-400 bg-gray-800 w-8 h-8 rounded-full">✕</button>
+          </div>
+          <div className="flex gap-2 mt-3">
+            <a href="/track" className="flex-1 bg-yellow-500 text-black p-3 rounded-xl text-center font-black text-sm">View Rider Location</a>
+            <a href={`tel:${liveRider.phone}`} className="flex-1 bg-white text-black p-3 rounded-xl text-center font-black text-sm">Call Rider</a>
+          </div>
+          <a href={`https://wa.me/92${liveRider.phone?.slice(-10)}`} target="_blank" className="block w-full bg-[#00ff66] text-black p-3 rounded-xl text-center font-black mt-2 text-sm">Chat with Rider</a>
+        </div>
+      )}
+
       <footer className="text-center py-10 text-gray-500 text-sm">Founded by HADI - 19, Sukkur Pakistan. Building Billions.</footer>
     </div>
   );
-  }
+         }
