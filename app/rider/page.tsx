@@ -1,5 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
+import { supabase } from "@/lib/supabase";
+
 export default function RiderPage(){
   const [step, setStep] = useState("kyc");
   const [name, setName] = useState("");
@@ -9,6 +11,7 @@ export default function RiderPage(){
   const [cnicImg, setCnicImg] = useState("");
   const [bikeImg, setBikeImg] = useState("");
   const [loc, setLoc] = useState({lat:27.704,lng:68.845});
+  const [allOrders, setAllOrders] = useState<any[]>([]);
 
   useEffect(()=>{
     const s = localStorage.getItem("kaiha_rider");
@@ -17,6 +20,9 @@ export default function RiderPage(){
       setName(d.name); setBikeNo(d.bikeNo); setPhone(d.phone);
       if(d.verified) setStep("orders"); else setStep("pending");
     }
+    // ✅ Supabase real orders
+    supabase.from("kaiha_orders").select("*").eq("status","pending").order("created_at",{ascending:false})
+     .then(({data})=>{ if(data) setAllOrders(data); });
   },[]);
 
   const submitKYC = () => {
@@ -31,14 +37,27 @@ export default function RiderPage(){
     setTimeout(()=>{ localStorage.setItem("kaiha_rider", JSON.stringify({name,cnic,bikeNo,phone,verified:true})); }, 3000);
   };
 
-  const acceptOrder = () => {
-    localStorage.setItem("kaiha_order_status", "on_the_way"); // <-- THIS LINE SENDS NOTIFICATION TO CUSTOMER
+  // ✅ YOUR SAME FUNCTION + SUPABASE ADDED - DESIGN NOT CHANGED
+  const acceptOrder = async (orderId:string = "1234") => {
+    // For Supabase - so customer + admin get notification on other phone
+    await supabase.from("kaiha_orders").update({status:"on_the_way", rider_name:name}).eq("id",orderId);
+
+    const saveLive = async (lat:number, lng:number) => {
+      setLoc({lat,lng});
+      localStorage.setItem("kaiha_live", JSON.stringify({riderName:name, bikeNo, phone, lat, lng}));
+      localStorage.setItem("kaiha_order_status", "on_the_way"); // YOUR OLD LOGIC STILL THERE
+      // ✅ NEW - Supabase live
+      await supabase.from("kaiha_live").upsert({order_id:orderId, riderName:name, bikeNo, phone, lat, lng, status:"on_the_way"});
+    };
+
     setStep("delivering");
     if(navigator.geolocation){
       navigator.geolocation.watchPosition((p)=>{
-        const l={lat:p.coords.latitude, lng:p.coords.longitude}; setLoc(l);
-        localStorage.setItem("kaiha_live", JSON.stringify({riderName:name, bikeNo, phone, lat:l.lat, lng:l.lng}));
+        const l={lat:p.coords.latitude, lng:p.coords.longitude};
+        saveLive(l.lat, l.lng);
       });
+    } else {
+      saveLive(27.704, 68.845);
     }
   };
 
@@ -75,20 +94,33 @@ export default function RiderPage(){
   if(step==="orders") return (
     <div className="bg-black text-white min-h-screen p-4">
       <h1 className="text-xl font-bold">Welcome {name} - Verified Rider</h1>
-      <div className="bg-[#101828] p-4 rounded-2xl mt-6 border border-gray-800">
-        <h2 className="font-bold">New Order #1234</h2>
-        <p className="text-sm text-gray-400 mt-1">Customer: Ali - Main Road, Sukkur</p>
-        <p className="font-bold mt-2">Item: Premium Kurta - Rs.1999</p>
-        <button onClick={acceptOrder} className="w-full bg-[#00ff66] text-black font-black p-4 rounded-xl mt-4">Accept & Deliver</button>
-      </div>
+      <p className="text-xs text-gray-400 mt-1">{allOrders.length} real orders from Supabase</p>
+      {allOrders.length===0 && (
+        <div className="bg-[#101828] p-4 rounded-2xl mt-6 border border-gray-800">
+          <h2 className="font-bold">New Order #1234 (Demo)</h2>
+          <p className="text-sm text-gray-400 mt-1">Customer: Ali - Main Road, Sukkur</p>
+          <p className="font-bold mt-2">Item: Premium Kurta - Rs.1999</p>
+          <button onClick={()=>acceptOrder("1234")} className="w-full bg-[#00ff66] text-black font-black p-4 rounded-xl mt-4">Accept & Deliver</button>
+        </div>
+      )}
+      {allOrders.map(o=>(
+        <div key={o.id} className="bg-[#101828] p-4 rounded-2xl mt-4 border border-gray-800">
+          <h2 className="font-bold">Order {o.id} - Rs.{o.price}</h2>
+          <p className="text-sm text-gray-400 mt-1">Customer: {o.customer_name}</p>
+          <p className="text-xs text-yellow-400 mt-2">PICKUP: {o.pickup_address}</p>
+          <p className="text-xs text-green-400">DROP: {o.drop_address}</p>
+          <p className="font-bold mt-2">{o.product_name}</p>
+          <button onClick={()=>acceptOrder(o.id)} className="w-full bg-[#00ff66] text-black font-black p-4 rounded-xl mt-4">Accept & Deliver</button>
+        </div>
+      ))}
     </div>
   )
   return (
     <div className="bg-black text-white min-h-screen p-4">
       <h1 className="text-xl font-bold text-green-400">Delivering - Live Location ON</h1>
-      <p className="text-sm mt-2">Customer got notification: Your order is on the way</p>
+      <p className="text-sm mt-2">Customer got notification: Your order is on the way (Supabase)</p>
       <p className="text-xs font-mono mt-2">{loc.lat.toFixed(5)}, {loc.lng.toFixed(5)}</p>
       <a href={`https://maps.google.com/?q=${loc.lat},${loc.lng}`} target="_blank" className="block bg-blue-600 text-center p-3 rounded-xl mt-4 font-bold">Open in Google Maps</a>
     </div>
   )
-          }
+      }
