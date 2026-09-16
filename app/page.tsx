@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ShoppingCart, X, Plus, Minus, Mic, Video, Shirt, Search, Bell, Heart, User, PlayCircle } from "lucide-react";
+import { ShoppingCart, X, Search, Bell, Heart, User, PlayCircle, Mic } from "lucide-react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 
@@ -50,7 +50,6 @@ export default function Home() {
 
   const currentCategories = activeTab === "Fashion"? fashionCategories : activeTab === "Beauty"? beautyCategories : homeCategories;
   const currentProduct = products[activeTab as keyof typeof products];
-
   const filteredVideos = kaihaTVVideos.filter(v =>
     activeTab === "Fashion"? v.product.includes("Kurta") :
     activeTab === "Beauty"? v.product.includes("Lipstick") :
@@ -63,7 +62,7 @@ export default function Home() {
         <div className="relative w-32 h-10 flex items-center">
           <AnimatePresence mode="wait">
             {showLogo? (
-              <motion.h1 key="logo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-2xl font-black tracking-widest text-yellow-500">KAIHA</motion.h1>
+              <motion.h1 key="logo" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="text-2xl font-black text-yellow-500">KAIHA</motion.h1>
             ) : (
               <motion.h1 key="text" className="text-2xl font-bold tracking-widest bg-gradient-to-r from-purple-500 to-yellow-500 bg-clip-text text-transparent" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 KAIHA
@@ -141,13 +140,11 @@ export default function Home() {
           <Image src={activeTab === "Fashion"? "https://images.unsplash.com/photo-1441986300917-64674bd600d8?q=80&w=1200" : activeTab === "Beauty"? "https://images.unsplash.com/photo-1596464716127-f2a82984de30?q=80&w=1200" : "https://images.unsplash.com/photo-1616486338812-3dadae4b4ace?q=80&w=1200"} alt="Banner" fill className="object-cover" unoptimized />
           <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-transparent p-6">
             <h2 className="text-2xl font-bold">{activeTab === "Fashion" && "Let's Get THIS PARTY STARTED!"}{activeTab === "Beauty" && "Glow Up This Season"}{activeTab === "Home" && "Make Your Home Beautiful"}</h2>
-            <p className="text-lg">{activeTab === "Fashion" && "Slay New Year Parties"}{activeTab === "Beauty" && "Best Makeup & Skincare"}{activeTab === "Home" && "Decor & Essentials"}</p>
           </div>
         </div>
       </div>
 
       <div className="p-6">
-        <p className="text-gray-400 text-sm mb-2">This item from: Seller Shop</p>
         <div className="relative">
           <motion.div animate={{ y: [0, -10, 0] }} transition={{ repeat: Infinity, duration: 3 }} className="w-60 mx-auto">
             <Image src={currentProduct.img} alt={currentProduct.name} width={240} height={360} className="rounded-lg" unoptimized />
@@ -171,4 +168,4 @@ export default function Home() {
       <footer className="text-center py-10 text-gray-500 text-sm">Founded by HADI - 19, Sukkur Pakistan. Building Billions.</footer>
     </div>
   );
-                                  }
+}
