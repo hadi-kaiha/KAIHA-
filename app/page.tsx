@@ -15,65 +15,34 @@ const ALL=[
 {id:8,n:"Girl Dress",pr:45,cat:"FASHION",sub:"GIRL",im:"https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=400"},
 {id:9,n:"Hoodie Unisex",pr:89,cat:"FASHION",sub:"UNISEX",im:"https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=400"},
 {id:10,n:"Lipstick",pr:25,cat:"BEAUTY",sub:"MAKEUP",im:"https://images.unsplash.com/photo-1586495777744-4413f21062fa?w=400"},
-{id:11,n:"Makeup Kit",pr:95,cat:"BEAUTY",sub:"MAKEUP",im:"https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?w=400"},
-{id:12,n:"Decor Lamp",pr:75,cat:"HOME",sub:"DECOR",im:"https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400"},
+{id:11,n:"Decor Lamp",pr:75,cat:"HOME",sub:"DECOR",im:"https://images.unsplash.com/photo-1507473885765-e6ed057f782c?w=400"},
+{id:12,n:"Vase Decor",pr:55,cat:"HOME",sub:"DECOR",im:"https://images.unsplash.com/photo-1578500351865-d6c3706f46a4?w=400"},
 ];
 export default function Home(){
 const [pg,setPg]=useState("home");const [mn,setMn]=useState(false);const [cart,setCart]=useState<any[]>([]);const [user,setUser]=useState<any>(null);const [accounts,setAccounts]=useState<any[]>([]);const [showLogin,setShowLogin]=useState(false);const [form,setForm]=useState({name:"",gmail:"",phone:""});const [otp,setOtp]=useState("");const [step,setStep]=useState(1);const [loading,setLoading]=useState(false);const [realOtp,setRealOtp]=useState("");
 const [mainCat,setMainCat]=useState("FASHION");const [subCat,setSubCat]=useState("MALE");const [q,setQ]=useState("");
 useEffect(()=>{const a=localStorage.getItem("kaiha_acc");if(a)setAccounts(JSON.parse(a));const s=localStorage.getItem("kaiha_user");if(s)setUser(JSON.parse(s));else setShowLogin(true)},[]);
-
-// OTP FIX - Supabase fail hua to local OTP
-const sendOtp=async()=>{
-if(!form.name||!form.gmail)return alert("Name & Gmail fill karo");
-setLoading(true);
-try{
-const {error}=await supabase.auth.signInWithOtp({email:form.gmail,options:{data:{full_name:form.name}}});
-if(error)throw error;
-alert("OTP sent to "+form.gmail+" (Check spam too)");
-setStep(2);
-}catch(e:any){
-console.log("Supabase fail, using local OTP",e.message);
-const localCode=Math.floor(100000+Math.random()*900000).toString();
-setRealOtp(localCode);
-localStorage.setItem("kaiha_local_otp",localCode);
-alert("Supabase busy! Your KAIHA OTP is: "+localCode+" (Email: "+form.gmail+")");
-setStep(2);
-}finally{setLoading(false);}
-};
-
-const verifyOtp=async()=>{
-setLoading(true);
-try{
-const localSaved=localStorage.getItem("kaiha_local_otp");
-if(localSaved && otp===localSaved){
-const u={...form,id:Date.now()};
-const n=[...accounts,u];setAccounts(n);localStorage.setItem("kaiha_acc",JSON.stringify(n));localStorage.setItem("kaiha_user",JSON.stringify(u));setUser(u);setShowLogin(false);localStorage.removeItem("kaiha_local_otp");alert("Login Success!");return;
-}
-const {error}=await supabase.auth.verifyOtp({email:form.gmail,token:otp,type:'email'});
-if(error)throw error;
-const u={...form,id:Date.now()};const n=[...accounts,u];setAccounts(n);localStorage.setItem("kaiha_acc",JSON.stringify(n));localStorage.setItem("kaiha_user",JSON.stringify(u));setUser(u);setShowLogin(false);
-}catch(err:any){
-if(otp===realOtp || otp==="123456"){
-const u={...form,id:Date.now()};const n=[...accounts,u];setAccounts(n);localStorage.setItem("kaiha_acc",JSON.stringify(n));localStorage.setItem("kaiha_user",JSON.stringify(u));setUser(u);setShowLogin(false);alert("Login Success (Test OTP)");
-}else alert("OTP wrong! Try 123456 or "+realOtp);
-}finally{setLoading(false);}
-};
-
+const sendOtp=async()=>{if(!form.name||!form.gmail)return alert("Name & Gmail fill karo");setLoading(true);try{const{error}=await supabase.auth.signInWithOtp({email:form.gmail,options:{data:{full_name:form.name}}});if(error)throw error;alert("OTP sent to "+form.gmail);setStep(2);}catch(e:any){const localCode=Math.floor(100000+Math.random()*900000).toString();setRealOtp(localCode);localStorage.setItem("kaiha_local_otp",localCode);alert("Your KAIHA OTP is: "+localCode);setStep(2);}finally{setLoading(false);}};
+const verifyOtp=async()=>{setLoading(true);try{const localSaved=localStorage.getItem("kaiha_local_otp");if(localSaved && otp===localSaved){const u={...form,id:Date.now()};const n=[...accounts,u];setAccounts(n);localStorage.setItem("kaiha_acc",JSON.stringify(n));localStorage.setItem("kaiha_user",JSON.stringify(u));setUser(u);setShowLogin(false);localStorage.removeItem("kaiha_local_otp");return;}const{error}=await supabase.auth.verifyOtp({email:form.gmail,token:otp,type:'email'});if(error)throw error;const u={...form,id:Date.now()};const n=[...accounts,u];setAccounts(n);localStorage.setItem("kaiha_acc",JSON.stringify(n));localStorage.setItem("kaiha_user",JSON.stringify(u));setUser(u);setShowLogin(false);}catch{ if(otp===realOtp||otp==="123456"){const u={...form,id:Date.now()};const n=[...accounts,u];setAccounts(n);localStorage.setItem("kaiha_acc",JSON.stringify(n));localStorage.setItem("kaiha_user",JSON.stringify(u));setUser(u);setShowLogin(false);}else alert("Wrong OTP! Use 123456 or "+realOtp);}finally{setLoading(false);}};
 const add=(p:any)=>setCart(c=>[...c,{...p,aid:Date.now()}]);const tot=cart.reduce((s:any,i:any)=>s+i.pr,0);
 const filtered=ALL.filter(p=>{if(q)return p.n.toLowerCase().includes(q.toLowerCase());if(mainCat==="FASHION")return p.cat==="FASHION"&&p.sub===subCat;return p.cat===mainCat;});
 return(
 <div style={{background:"#000",display:"flex",justifyContent:"center",minHeight:"100vh"}}>
 <div style={{background:"#0a0a0a",width:"100%",maxWidth:"390px",minHeight:"100vh",paddingBottom:"110px",position:"relative",borderRadius:"28px",overflow:"hidden",color:"#fff"}}>
-<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:"1px solid #1a1a1a",position:"sticky",top:0,background:"rgba(10,10,10,0.96)",zIndex:30}}><div onClick={()=>{setPg("home");setMn(false)}} style={{display:"flex",alignItems:"center",gap:"12px"}}><img src={LOGO} style={{height:"56px",width:"56px",borderRadius:"14px"}}/><span style={{color:"#D4B78F",letterSpacing:"0.38em",fontSize:"18px"}}>KAIHA</span></div>
-<button onClick={()=>setMn(!mn)} style={{background:"none",border:"none",display:"flex",flexDirection:"column",gap:"5px",width:"32px",zIndex:40}}>
-<span style={{width:"26px",height:"2.5px",background:"#D4B78F",display:"block",transform:mn?"rotate(45deg) translate(5px,5px)":"none",transition:"0.3s"}}></span>
-<span style={{width:"26px",height:"2.5px",background:"#D4B78F",display:"block",opacity:mn?0:1,transition:"0.3s"}}></span>
-<span style={{width:"26px",height:"2.5px",background:"#D4B78F",display:"block",transform:mn?"rotate(-45deg) translate(5px,-5px)":"none",transition:"0.3s"}}></span>
+{/* HEADER - BADA LOGO - SCREENSHOT JAISA */}
+<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"14px 20px",borderBottom:"1px solid #1a1a1a",position:"sticky",top:0,background:"rgba(10,10,10,0.96)",zIndex:30}}>
+<div onClick={()=>{setPg("home");setMn(false)}} style={{display:"flex",alignItems:"center",gap:"14px"}}>
+<img src={LOGO} style={{height:"72px",width:"72px",borderRadius:"16px",objectFit:"cover"}}/>
+<span style={{color:"#D4B78F",letterSpacing:"0.42em",fontSize:"22px",fontWeight:"400"}}>KAIHA</span>
+</div>
+<button onClick={()=>setMn(!mn)} style={{background:"none",border:"none",display:"flex",flexDirection:"column",gap:"6px",width:"36px",zIndex:40}}>
+<span style={{width:"30px",height:"3px",background:"#D4B78F",display:"block",transform:mn?"rotate(45deg) translate(6px,6px)":"none",transition:"0.3s"}}></span>
+<span style={{width:"30px",height:"3px",background:"#D4B78F",display:"block",opacity:mn?0:1,transition:"0.3s"}}></span>
+<span style={{width:"30px",height:"3px",background:"#D4B78F",display:"block",transform:mn?"rotate(-45deg) translate(6px,-6px)":"none",transition:"0.3s"}}></span>
 </button>
 </div>
 {mn&&<div style={{position:"fixed",inset:0,zIndex:25,background:"rgba(0,0,0,0.6)"}} onClick={()=>setMn(false)}></div>}
-{mn&&<div style={{position:"fixed",top:"76px",right:"0",width:"260px",height:"calc(100% - 76px)",background:"#141414",zIndex:35,borderLeft:"1px solid #222",padding:"20px"}}>
+{mn&&<div style={{position:"fixed",top:"80px",right:"0",width:"260px",height:"calc(100% - 80px)",background:"#141414",zIndex:35,borderLeft:"1px solid #222",padding:"20px"}}>
 <div style={{color:"#D4B78F",fontSize:"11px",letterSpacing:"0.3em",marginBottom:"20px"}}>MENU</div>
 {[{lb:"Home",v:"home"},{lb:"Shop All",v:"category"},{lb:"KAIHA TV / Reels",v:"reels"},{lb:`Bag (${cart.length})`,v:"bag"},{lb:"Profile",v:"profile"}].map(m=><div key={m.v} onClick={()=>{setPg(m.v);setMn(false)}} style={{padding:"14px 12px",borderBottom:"1px solid #1a1a1a",background:pg===m.v?"#1a1a1a":"transparent",borderRadius:"10px",marginBottom:"6px",fontSize:"13px",color:pg===m.v?"#D4B78F":"#fff"}}>{m.lb}</div>)}
 </div>}
@@ -101,26 +70,19 @@ return(
 {ALL.slice(0,4).map((p:any)=><div key={p.id} onClick={()=>setPg("reels")} style={{minWidth:"120px",height:"160px",borderRadius:"14px",overflow:"hidden",position:"relative",background:"#111",border:"1px solid #222"}}><img src={p.im} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",width:"28px",height:"28px",borderRadius:"999px",background:"#D4B78F",display:"flex",alignItems:"center",justifyContent:"center",color:"#000"}}>▶</div></div>)}
 </div></div>
 </div>}
-
 {pg==="category"&&<div style={{padding:"16px"}}><div style={{display:"flex",justifyContent:"space-between"}}><b>{mainCat}-{subCat}</b><span onClick={()=>setPg("home")} style={{color:"#D4B78F",fontSize:"12px"}}>← Back</span></div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginTop:"16px"}}>{filtered.map((p:any)=><div key={p.id} style={{background:"#141414",borderRadius:"16px",padding:"8px",border:"1px solid #222"}}><img src={p.im} style={{width:"100%",height:"145px",borderRadius:"12px",objectFit:"cover"}}/><div style={{fontSize:"11px",marginTop:"8px"}}>{p.n}</div><div style={{fontSize:"10px",color:"#D4B78F"}}>{PKR(p.pr)}</div><button onClick={()=>add(p)} style={{width:"100%",marginTop:"8px",background:"#D4B78F",border:"none",borderRadius:"999px",padding:"8px",fontWeight:"800"}}>ADD TO BAG</button></div>)}</div></div>}
-
 {pg==="reels"&&<div><div style={{padding:"16px",display:"flex",justifyContent:"space-between"}}><b>KAIHA TV</b><span onClick={()=>setPg("home")} style={{color:"#D4B78F",fontSize:"12px"}}>← Back</span></div>{ALL.slice(0,4).map((p:any)=><div key={p.id} style={{height:"60vh",margin:"0 12px 12px",borderRadius:"20px",overflow:"hidden",position:"relative",background:"#111"}}><img src={p.im} style={{width:"100%",height:"100%",objectFit:"cover"}}/><div style={{position:"absolute",bottom:"20px",left:"16px"}}><b>{p.n}</b><div style={{color:"#D4B78F"}}>{PKR(p.pr)}</div></div></div>)}</div>}
-
 {pg==="bag"&&<div style={{padding:"16px"}}><b>Bag ({cart.length}) {PKR(tot)}</b>{cart.map((c:any,i:number)=><div key={c.aid} style={{background:"#141414",borderRadius:"12px",padding:"12px",display:"flex",gap:"12px",marginTop:"10px"}}><img src={c.im} style={{width:"54px",height:"54px",borderRadius:"10px"}}/><div style={{flex:1}}><div style={{fontSize:"12px"}}>{c.n}</div><div style={{fontSize:"10px",color:"#D4B78F"}}>{PKR(c.pr)}</div></div><button onClick={()=>setCart(cart.filter((_:any,idx:number)=>idx!==i))} style={{background:"none",border:"1px solid #333",color:"#888",borderRadius:"999px",width:"28px",height:"28px"}}>✕</button></div>)}</div>}
-
 {pg==="profile"&&<div style={{padding:"18px",textAlign:"center"}}><div style={{width:"64px",height:"64px",borderRadius:"999px",background:"#222",margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",border:"1px solid #D4B78F44"}}>{user?.name?.[0]||"H"}</div><div style={{marginTop:"8px",fontWeight:"700"}}>{user?.name||"Guest"}</div><button onClick={()=>{setShowLogin(true);setStep(1)}} style={{marginTop:"16px",background:"#D4B78F",color:"#000",border:"none",padding:"10px 20px",borderRadius:"999px",fontWeight:"800"}}>+ ADD ACCOUNT</button></div>}
-
 <div style={{textAlign:"center",padding:"24px 0 10px",borderTop:"1px solid #1a1a1a",marginTop:"24px"}}><div style={{color:"#D4B78F",fontSize:"10px",letterSpacing:"0.32em"}}>KAIHA</div><div style={{color:"#666",fontSize:"8.5px",marginTop:"6px"}}>© KAIHA - HADI SUKKUR 2026</div></div>
-
-<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"390px",background:"rgba(15,15,15,0.98)",backdropFilter:"blur(16px)",borderTop:"1px solid #222",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-around",padding:"14px 0 20px",zIndex:20}}>
+<div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"390px",background:"rgba(15,15,15,0.98)",borderTop:"1px solid #222",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-around",padding:"14px 0 20px",zIndex:20}}>
 <div onClick={()=>setPg("home")} style={{color:pg==="home"?"#D4B78F":"#6B6B6B",display:"flex",flexDirection:"column",alignItems:"center",gap:"5px"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M3 10L12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10z"/></svg><span style={{fontSize:"9px"}}>Home</span></div>
 <div onClick={()=>setPg("category")} style={{color:pg==="category"?"#D4B78F":"#6B6B6B",display:"flex",flexDirection:"column",alignItems:"center",gap:"5px"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style={{fontSize:"9px"}}>Shop</span></div>
 <div onClick={()=>setPg("reels")} style={{color:pg==="reels"?"#D4B78F":"#6B6B6B",display:"flex",flexDirection:"column",alignItems:"center",gap:"5px"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><polygon points="6 3 20 12 6 21 6 3"/></svg><span style={{fontSize:"9px"}}>Reels</span></div>
 <div onClick={()=>setPg("bag")} style={{color:pg==="bag"?"#D4B78F":"#6B6B6B",display:"flex",flexDirection:"column",alignItems:"center",gap:"5px",position:"relative"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>{cart.length>0&&<span style={{position:"absolute",top:"-7px",right:"2px",background:"#D4B78F",color:"#000",fontSize:"8px",minWidth:"15px",height:"15px",borderRadius:"999px",display:"flex",alignItems:"center",justifyContent:"center"}}>{cart.length}</span>}<span style={{fontSize:"9px"}}>Bag</span></div>
 <div onClick={()=>setPg("profile")} style={{color:pg==="profile"?"#D4B78F":"#6B6B6B",display:"flex",flexDirection:"column",alignItems:"center",gap:"5px"}}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="8" r="3.2"/><path d="M5 19a7 7 0 0 1 14 0"/></svg><span style={{fontSize:"9px"}}>Profile</span></div>
 </div>
-
-{showLogin&&<div style={{position:"fixed",inset:0,zIndex:50,background:"rgba(0,0,0,0.92)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}><div style={{background:"#141414",borderRadius:"16px",padding:"18px",width:"100%",maxWidth:"320px",border:"1px solid #D4B78F44"}}>{step===1?<><div style={{textAlign:"center",color:"#D4B78F",letterSpacing:"0.3em",fontSize:"12px"}}>KAIHA SECURE</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Full Name" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"12px"}}/><input value={form.gmail} onChange={e=>setForm({...form,gmail:e.target.value})} placeholder="Gmail for OTP" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"8px"}}/><button onClick={sendOtp} disabled={loading} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"11px",borderRadius:"999px",fontWeight:"800"}}>{loading?"SENDING...":"SEND OTP"}</button><div style={{fontSize:"9px",color:"#666",marginTop:"8px",textAlign:"center"}}>OTP fail? Use 123456 as test code</div></>:<><div style={{textAlign:"center",color:"#D4B78F",fontSize:"11px"}}>OTP sent to {form.gmail} {realOtp?`(${realOtp})`:""}</div><input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="6-digit OTP" maxLength={6} style={{width:"100%",background:"#0a0a0a",border:"1px solid #D4B78F66",borderRadius:"8px",padding:"12px",color:"#fff",marginTop:"12px",textAlign:"center",letterSpacing:"0.3em"}}/><button onClick={verifyOtp} disabled={loading} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"11px",borderRadius:"999px",fontWeight:"800"}}>{loading?"VERIFYING...":"VERIFY"}</button><button onClick={()=>setStep(1)} style={{width:"100%",marginTop:"8px",background:"none",border:"1px solid #333",color:"#888",padding:"9px",borderRadius:"999px"}}>Back</button></>}</div></div>}
+{showLogin&&<div style={{position:"fixed",inset:0,zIndex:50,background:"rgba(0,0,0,0.92)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}><div style={{background:"#141414",borderRadius:"16px",padding:"18px",width:"100%",maxWidth:"320px",border:"1px solid #D4B78F44"}}>{step===1?<><div style={{textAlign:"center",color:"#D4B78F",letterSpacing:"0.3em",fontSize:"12px"}}>KAIHA SECURE</div><input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Full Name" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"12px"}}/><input value={form.gmail} onChange={e=>setForm({...form,gmail:e.target.value})} placeholder="Gmail for OTP" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"8px"}}/><button onClick={sendOtp} disabled={loading} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"11px",borderRadius:"999px",fontWeight:"800"}}>{loading?"SENDING...":"SEND OTP"}</button><div style={{fontSize:"9px",color:"#666",marginTop:"8px",textAlign:"center"}}>Fail? Use 123456</div></>:<><div style={{textAlign:"center",color:"#D4B78F",fontSize:"11px"}}>OTP sent to {form.gmail} {realOtp?`(${realOtp})`:""}</div><input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="6-digit OTP" maxLength={6} style={{width:"100%",background:"#0a0a0a",border:"1px solid #D4B78F66",borderRadius:"8px",padding:"12px",color:"#fff",marginTop:"12px",textAlign:"center",letterSpacing:"0.3em"}}/><button onClick={verifyOtp} disabled={loading} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"11px",borderRadius:"999px",fontWeight:"800"}}>{loading?"VERIFYING...":"VERIFY"}</button><button onClick={()=>setStep(1)} style={{width:"100%",marginTop:"8px",background:"none",border:"1px solid #333",color:"#888",padding:"9px",borderRadius:"999px"}}>Back</button></>}</div></div>}
 </div></div>
 );
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     }
+}
