@@ -4,129 +4,145 @@ import { useState } from "react";
 export default function Home(){
   const [menu,setMenu]=useState(false);
   const [cart,setCart]=useState(0);
+  const [logoError,setLogoError]=useState(false);
 
-  const stylesData = [
-    { name:"Minimal", img:"https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=200" },
-    { name:"Evening", img:"https://images.unsplash.com/photo-1595777457583-95e059d581b8?w=200" },
-    { name:"Casual", img:"https://images.unsplash.com/photo-1556821840-3a63f95609a7?w=200" },
-    { name:"Streetwear", img:"https://images.unsplash.com/photo-1543508282-6319a3e2621f?w=200" },
-    { name:"Accessories", img:"https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200" },
+  const styles=[
+    {n:"Minimal", img:"https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=200"},
+    {n:"Evening", img:"https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=200"},
+    {n:"Casual", img:"https://images.unsplash.com/photo-1578683010236-d716f9a3f461?w=200"},
+    {n:"Streetwear", img:"https://images.unsplash.com/photo-1600269452121-4f2416e55c28?w=200"},
+    {n:"Accessories", img:"https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=200"},
   ];
 
   return(
-    <div style={{background:"#000", color:"#fff", minHeight:"100vh", paddingBottom:"95px", maxWidth:"430px", margin:"0 auto", fontFamily:"Inter, sans-serif"}}>
-      
-      {/* HEADER - EXACT LIKE IMAGE - Purple K + Gold KAIHA */}
-      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 16px 12px", background:"#0a0a0a", position:"sticky", top:0, zIndex:20}}>
+    <div style={{background:"#0a0a0a", color:"#fff", minHeight:"100vh", paddingBottom:"95px", maxWidth:"430px", margin:"0 auto", fontFamily:"Inter, system-ui, sans-serif"}}>
+
+      {/* HEADER - EXACT SAME SIZE LOGO - K + KAIHA */}
+      <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", padding:"18px 18px 14px", background:"#0a0a0a"}}>
         <div style={{display:"flex", alignItems:"center", gap:"10px"}}>
-          <img src="/kaiha-logo.png" alt="KAIHA" style={{height:"52px", width:"auto"}} />
-        </div>
-        <button onClick={()=>setMenu(true)} style={{background:"none", border:"none", color:"#D4AF37", fontSize:"28px"}}>☰</button>
-      </div>
-
-      {/* SEARCH BAR - Gold border */}
-      <div style={{padding:"0 16px"}}>
-        <div style={{background:"#111", borderRadius:"12px", height:"46px", display:"flex", alignItems:"center", padding:"0 14px", gap:"10px", border:"1px solid #D4AF37", opacity:0.9}}>
-          <span style={{color:"#D4AF37", fontSize:"18px"}}>⌕</span>
-          <input placeholder="Search for products, styles, brands..." style={{background:"transparent", border:"none", outline:"none", color:"#999", flex:1, fontSize:"13px"}} />
-        </div>
-      </div>
-
-      {/* BANNER - Fall Collection 2026 - EXACT LIKE IMAGE */}
-      <div style={{margin:"16px", borderRadius:"16px", height:"168px", position:"relative", overflow:"hidden", background:"#111", border:"1px solid #1a1a1a"}}>
-        <img src="https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=800" style={{position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:"right"}} alt="" />
-        <div style={{position:"absolute", inset:0, background:"linear-gradient(90deg, rgba(10,10,10,0.95) 0%, rgba(10,10,10,0.7) 50%, rgba(10,10,10,0.2) 100%)"}}></div>
-        <div style={{position:"relative", padding:"18px", height:"100%", display:"flex", flexDirection:"column", justifyContent:"center", width:"65%"}}>
-          <div style={{color:"#D4AF37", fontSize:"11px", fontWeight:"600", letterSpacing:"0.5px"}}>NEW ARRIVALS</div>
-          <div style={{fontSize:"24px", fontFamily:"serif", marginTop:"4px", lineHeight:"1.1"}}>Fall Collection 2026</div>
-          <div style={{color:"#9ca3af", fontSize:"11px", marginTop:"4px"}}>Luxury. Timeless. Curated for you.</div>
-          <button style={{marginTop:"12px", background:"#D4AF37", color:"#000", border:"none", padding:"6px 14px", borderRadius:"6px", fontWeight:"bold", fontSize:"11px", width:"fit-content"}}>SHOP NOW</button>
-        </div>
-      </div>
-
-      {/* SHOP BY STYLE - EXACT CIRCLES LIKE IMAGE */}
-      <div style={{padding:"0 16px"}}>
-        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-          <b style={{fontSize:"15px"}}>Shop by Style</b>
-          <span style={{color:"#D4AF37", fontSize:"12px"}}>See all ›</span>
-        </div>
-        <div style={{display:"flex", gap:"14px", marginTop:"14px", overflowX:"auto", paddingBottom:"4px"}}>
-          {stylesData.map(s=>(
-            <div key={s.name} style={{minWidth:"62px", textAlign:"center"}}>
-              <div style={{width:"62px", height:"62px", borderRadius:"999px", overflow:"hidden", border:"1px solid #D4AF37", background:"#0a0a0a", display:"flex", alignItems:"center", justifyContent:"center"}}>
-                <img src={s.img} style={{width:"100%", height:"100%", objectFit:"cover"}} alt="" />
+          {!logoError ? (
+            <img src="/kaiha-logo.png" onError={()=>setLogoError(true)} alt="KAIHA" style={{height:"44px", width:"auto", objectFit:"contain", display:"block"}}/>
+          ) : (
+            <div style={{display:"flex", alignItems:"center", gap:"12px"}}>
+              <div style={{width:"36px", height:"38px", position:"relative", display:"flex", alignItems:"center", justifyContent:"center"}}>
+                <span style={{color:"#8B5CF6", fontSize:"42px", fontWeight:"900", fontFamily:"serif", lineHeight:1, letterSpacing:"-2px", background:"linear-gradient(180deg, #A78BFA 0%, #7C3AED 50%, #6D28D9 100%)", WebkitBackgroundClip:"text", WebkitTextFillColor:"transparent", filter:"drop-shadow(0 0 0.5px #8B5CF6)"}}>K</span>
               </div>
-              <div style={{fontSize:"11px", marginTop:"8px", color:"#d1d5db"}}>{s.name}</div>
+              <span style={{color:"#D4B78F", letterSpacing:"0.42em", fontSize:"17px", fontWeight:"400", fontFamily:"serif"}}>KAIHA</span>
+            </div>
+          )}
+        </div>
+        <button onClick={()=>setMenu(true)} style={{background:"none", border:"none", color:"#D4B78F"}}>
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 6h18M3 12h18M3 18h18" strokeLinecap="round"/></svg>
+        </button>
+      </div>
+
+      {/* SEARCH - Same as image */}
+      <div style={{padding:"0 18px"}}>
+        <div style={{background:"#141414", borderRadius:"10px", height:"42px", display:"flex", alignItems:"center", padding:"0 14px", gap:"10px", border:"1px solid rgba(212,183,143,0.45)"}}>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#D4B78F" strokeWidth="2"><circle cx="11" cy="11" r="6"/><path d="m21 21-3.5-3.5"/></svg>
+          <input placeholder="Search for products, styles, brands..." style={{background:"transparent", border:"none", outline:"none", color:"#777", flex:1, fontSize:"13px"}}/>
+        </div>
+      </div>
+
+      {/* BANNER - Fall Collection 2026 - Same as image */}
+      <div style={{margin:"14px 18px", borderRadius:"14px", height:"148px", position:"relative", overflow:"hidden", background:"#111"}}>
+        <img src="https://images.unsplash.com/photo-1485968579580-b6d095142e6e?w=800" style={{position:"absolute", inset:0, width:"100%", height:"100%", objectFit:"cover", objectPosition:"right center"}} alt=""/>
+        <div style={{position:"absolute", inset:0, background:"linear-gradient(90deg, rgba(18,18,18,0.96) 0%, rgba(18,18,18,0.75) 45%, rgba(18,18,18,0.15) 100%)"}}></div>
+        <div style={{position:"relative", padding:"14px 16px", height:"100%", display:"flex", flexDirection:"column", justifyContent:"center", width:"62%"}}>
+          <div style={{color:"#D4B78F", fontSize:"10px", fontWeight:"700", letterSpacing:"0.3px"}}>NEW ARRIVALS</div>
+          <div style={{fontSize:"21px", fontFamily:"serif", marginTop:"3px", lineHeight:"1.15", fontWeight:"500"}}>Fall Collection 2026</div>
+          <div style={{color:"#9ca3af", fontSize:"10px", marginTop:"3px"}}>Luxury. Timeless. Curated for you.</div>
+          <button style={{marginTop:"10px", background:"#D4B78F", color:"#000", border:"none", padding:"5px 10px", borderRadius:"4px", fontWeight:"700", fontSize:"9.5px", width:"fit-content", letterSpacing:"0.2px"}}>SHOP NOW</button>
+        </div>
+      </div>
+
+      {/* SHOP BY STYLE - Exact circles */}
+      <div style={{padding:"2px 18px 0"}}>
+        <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
+          <b style={{fontSize:"14px", fontWeight:"700"}}>Shop by Style</b>
+          <span style={{color:"#D4B78F", fontSize:"11px"}}>See all ›</span>
+        </div>
+        <div style={{display:"flex", gap:"12px", marginTop:"12px", overflowX:"auto", scrollbarWidth:"none"}}>
+          {styles.map(s=>(
+            <div key={s.n} style={{minWidth:"56px", textAlign:"center"}}>
+              <div style={{width:"56px", height:"56px", borderRadius:"999px", overflow:"hidden", border:"1px solid rgba(212,183,143,0.5)", background:"#1a1a1a", padding:"2px"}}>
+                <img src={s.img} style={{width:"100%", height:"100%", objectFit:"cover", borderRadius:"999px"}} alt=""/>
+              </div>
+              <div style={{fontSize:"9.5px", marginTop:"6px", color:"#d1d5db", fontWeight:"500"}}>{s.n}</div>
             </div>
           ))}
         </div>
       </div>
 
-      {/* TRENDING NOW - EXACT LIKE IMAGE */}
-      <div style={{padding:"20px 16px 0"}}>
+      {/* TRENDING NOW - Exact 2 cards like image */}
+      <div style={{padding:"16px 18px 0"}}>
         <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-          <b style={{fontSize:"15px"}}>Trending Now</b>
-          <span style={{color:"#D4AF37", fontSize:"12px"}}>See all ›</span>
+          <b style={{fontSize:"14px", fontWeight:"700"}}>Trending Now</b>
+          <span style={{color:"#D4B78F", fontSize:"11px"}}>See all ›</span>
         </div>
-        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"12px", marginTop:"12px"}}>
-          <div style={{background:"#0f0f0f", borderRadius:"16px", padding:"10px", border:"1px solid #1f1f1f"}}>
-            <div style={{height:"180px", borderRadius:"12px", overflow:"hidden", background:"#000", position:"relative"}}>
-              <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400" style={{width:"100%", height:"100%", objectFit:"cover", opacity:0.9}} alt="" />
-              <div style={{position:"absolute", inset:0, background:"linear-gradient(to top, black 20%, transparent 70%)"}}></div>
-              <div style={{position:"absolute", bottom:"8px", left:0, right:0, textAlign:"center"}}>
-                <div style={{fontSize:"12px", color:"#fff"}}>Silk Blazer</div>
-                <div style={{fontSize:"12px", color:"#D4AF37", marginTop:"2px"}}>Rs.1899</div>
+        <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"10px", marginTop:"10px"}}>
+          <div style={{background:"#141414", borderRadius:"12px", padding:"8px", border:"1px solid #1f1f1f"}}>
+            <div style={{height:"148px", borderRadius:"8px", overflow:"hidden", position:"relative", background:"#0a0a0a"}}>
+              <img src="https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400" style={{width:"100%", height:"100%", objectFit:"cover", opacity:0.85}} alt=""/>
+              <div style={{position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 55%)"}}></div>
+              <div style={{position:"absolute", bottom:"10px", left:0, right:0, textAlign:"center"}}>
+                <div style={{fontSize:"10.5px", fontWeight:"600"}}>Silk Blazer</div>
+                <div style={{color:"#D4B78F", fontSize:"10.5px", marginTop:"2px"}}>Rs.1899</div>
               </div>
             </div>
-            <button onClick={()=>setCart(c=>c+1)} style={{width:"100%", marginTop:"10px", background:"transparent", border:"1px solid #D4AF37", color:"#D4AF37", borderRadius:"8px", padding:"8px", fontSize:"11px", fontWeight:"600"}}>ADD TO CART</button>
+            <button onClick={()=>setCart(c=>c+1)} style={{width:"100%", marginTop:"8px", background:"transparent", border:"1px solid rgba(212,183,143,0.6)", color:"#D4B78F", borderRadius:"6px", padding:"6px", fontSize:"9px", fontWeight:"600", letterSpacing:"0.3px"}}>ADD TO CART</button>
           </div>
-          <div style={{background:"#0f0f0f", borderRadius:"16px", padding:"10px", border:"1px solid #1f1f1f"}}>
-            <div style={{height:"180px", borderRadius:"12px", overflow:"hidden", background:"#000", position:"relative"}}>
-              <img src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400" style={{width:"100%", height:"100%", objectFit:"cover", opacity:0.9}} alt="" />
-              <div style={{position:"absolute", inset:0, background:"linear-gradient(to top, black 20%, transparent 70%)"}}></div>
-              <div style={{position:"absolute", bottom:"8px", left:0, right:0, textAlign:"center"}}>
-                <div style={{fontSize:"12px", color:"#fff"}}>Leather Bag</div>
-                <div style={{fontSize:"12px", color:"#D4AF37", marginTop:"2px"}}>Rs.2450</div>
+          <div style={{background:"#141414", borderRadius:"12px", padding:"8px", border:"1px solid #1f1f1f"}}>
+            <div style={{height:"148px", borderRadius:"8px", overflow:"hidden", position:"relative", background:"#0a0a0a"}}>
+              <img src="https://images.unsplash.com/photo-1584917865442-de89df76afd3?w=400" style={{width:"100%", height:"100%", objectFit:"cover", opacity:0.85}} alt=""/>
+              <div style={{position:"absolute", inset:0, background:"linear-gradient(to top, rgba(0,0,0,0.9) 0%, transparent 55%)"}}></div>
+              <div style={{position:"absolute", bottom:"10px", left:0, right:0, textAlign:"center"}}>
+                <div style={{fontSize:"10.5px", fontWeight:"600"}}>Leather Bag</div>
+                <div style={{color:"#D4B78F", fontSize:"10.5px", marginTop:"2px"}}>Rs.2450</div>
               </div>
             </div>
-            <button onClick={()=>setCart(c=>c+1)} style={{width:"100%", marginTop:"10px", background:"transparent", border:"1px solid #D4AF37", color:"#D4AF37", borderRadius:"8px", padding:"8px", fontSize:"11px", fontWeight:"600"}}>ADD TO CART</button>
+            <button onClick={()=>setCart(c=>c+1)} style={{width:"100%", marginTop:"8px", background:"transparent", border:"1px solid rgba(212,183,143,0.6)", color:"#D4B78F", borderRadius:"6px", padding:"6px", fontSize:"9px", fontWeight:"600", letterSpacing:"0.3px"}}>ADD TO CART</button>
           </div>
         </div>
       </div>
 
-      {/* BOTTOM NAV - EXACT LIKE IMAGE - GOLD BORDER */}
-      <div style={{position:"fixed", bottom:0, left:0, right:0, maxWidth:"430px", margin:"0 auto", background:"#0a0a0a", borderTop:"1.5px solid #D4AF37", borderLeft:"1px solid #D4AF37", borderRight:"1px solid #D4AF37", borderRadius:"20px 20px 0 0", display:"flex", justifyContent:"space-around", padding:"12px 0 8px", zIndex:50}}>
-        {[
-          {name:"Home", icon:"🏠", active:true},
-          {name:"Shop", icon:"👜"},
-          {name:"Reels", icon:"▶️"},
-          {name:"Bag", icon:"🛍️", count:cart},
-          {name:"Profile", icon:"👤"},
-        ].map(t=>(
-          <div key={t.name} style={{display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", color: t.active ? "#D4AF37" : "#6b7280", position:"relative"}}>
-            <span style={{fontSize:"20px"}}>{t.icon}</span>
-            {t.count>0 && <span style={{position:"absolute", top:"-4px", right:"-8px", background:"#D4AF37", color:"#000", fontSize:"9px", width:"14px", height:"14px", borderRadius:"999px", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"bold"}}>{t.count}</span>}
-            <span style={{fontSize:"10px"}}>{t.name}</span>
-          </div>
-        ))}
+      {/* BOTTOM NAV - EXACT LIKE IMAGE - No emoji, muted icons */}
+      <div style={{position:"fixed", bottom:"0", left:0, right:0, maxWidth:"430px", margin:"0 auto", background:"#141414", borderTop:"1px solid #D4B78F", borderLeft:"1px solid rgba(212,183,143,0.3)", borderRight:"1px solid rgba(212,183,143,0.3)", borderRadius:"16px 16px 0 0", display:"flex", justifyContent:"space-around", padding:"10px 0 6px", zIndex:50}}>
+        <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", color:"#D4B78F"}}>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5L2 12h2.5v8.5H10v-6h4v6h5.5V12H22L12 2.5z"/></svg>
+          <span style={{fontSize:"9px", fontWeight:"600"}}>Home</span>
+        </div>
+        <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", color:"#6b7280"}}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 6h-2V5a3 3 0 0 0-3-3H10a3 3 0 0 0-3 3v1H5a1 1 0 0 0-1 1v13a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7a1 1 0 0 0-1-1zM9 5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v1H9V5z"/></svg>
+          <span style={{fontSize:"9px"}}>Shop</span>
+        </div>
+        <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", color:"#6b7280"}}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><rect x="2" y="2" width="20" height="20" rx="4"/><path d="M9 8.5l7 3.5-7 3.5v-7z" fill="#0a0a0a"/></svg>
+          <span style={{fontSize:"9px"}}>Reels</span>
+        </div>
+        <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", color:"#6b7280", position:"relative"}}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19 7h-2V6a3 3 0 0 0-3-3H10a3 3 0 0 0-3 3v1H5a2 2 0 0 0-2 2v2h18V9a2 2 0 0 0-2-2zM8 6a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1H8V6z"/><path d="M4 12v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6H4z"/></svg>
+          {cart>0 && <span style={{position:"absolute", top:"-5px", right:"-6px", background:"#D4B78F", color:"#000", fontSize:"8px", width:"12px", height:"12px", borderRadius:"999px", display:"flex", alignItems:"center", justifyContent:"center", fontWeight:"bold"}}>{cart}</span>}
+          <span style={{fontSize:"9px"}}>Bag</span>
+        </div>
+        <div style={{display:"flex", flexDirection:"column", alignItems:"center", gap:"3px", color:"#6b7280"}}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="7.5" r="3.5"/><path d="M12 12c-4.5 0-7 2-7 3.5V18h14v-2.5c0-1.5-2.5-3.5-7-3.5z"/></svg>
+          <span style={{fontSize:"9px"}}>Profile</span>
+        </div>
       </div>
 
-      {/* HAMBURGER MENU */}
       {menu && (
         <div style={{position:"fixed", inset:0, zIndex:99, display:"flex", justifyContent:"flex-end"}}>
           <div style={{position:"absolute", inset:0, background:"rgba(0,0,0,0.8)"}} onClick={()=>setMenu(false)}></div>
-          <div style={{position:"relative", width:"78%", background:"#000", height:"100%", padding:"20px", borderLeft:"2px solid #D4AF37"}}>
+          <div style={{position:"relative", width:"78%", background:"#0a0a0a", height:"100%", padding:"20px", borderLeft:"1px solid rgba(212,183,143,0.4)"}}>
             <div style={{display:"flex", justifyContent:"space-between", alignItems:"center"}}>
-              <img src="/kaiha-logo.png" style={{height:"50px"}} alt="" />
-              <button onClick={()=>setMenu(false)} style={{width:"28px", height:"28px", border:"1px solid #D4AF37", borderRadius:"999px", background:"none", color:"#D4AF37"}}>✕</button>
+              {!logoError ? <img src="/kaiha-logo.png" onError={()=>setLogoError(true)} style={{height:"38px"}} alt=""/> : <span style={{color:"#D4B78F", letterSpacing:"0.35em", fontSize:"16px"}}>KAIHA</span>}
+              <button onClick={()=>setMenu(false)} style={{width:"26px", height:"26px", border:"1px solid #D4B78F", borderRadius:"999px", background:"none", color:"#D4B78F"}}>✕</button>
             </div>
-            <div style={{marginTop:"24px", color:"#e8d5a0", fontSize:"13px", lineHeight:"38px"}}>
-              🏠 Home<br/>🛍️ Shop<br/>📦 My Orders<br/>♡ Wishlist<br/>👑 Black Card<br/>🪙 Coins & Rewards<br/>📞 Contact Us<br/>ℹ️ About Us
-            </div>
-            <div style={{fontSize:"10px", color:"#555", textAlign:"center", marginTop:"20px"}}>v2.4.1 • KAIHA Luxury Fashion 2026 • PKR Only</div>
+            <div style={{marginTop:"22px", color:"#D4B78F", lineHeight:"38px", fontSize:"12px"}}>Home<br/>Shop<br/>My Orders<br/>Wishlist<br/>Contact Us<br/>About Us</div>
           </div>
         </div>
       )}
     </div>
   );
-        }
+                                                                                              }
