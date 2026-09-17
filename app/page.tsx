@@ -21,13 +21,7 @@ return(
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
 @keyframes slideMenu{from{transform:translateX(100%)}to{transform:translateX(0)}}
 @keyframes slideBg{from{opacity:0}to{opacity:1}}
-@keyframes textSlide{
-  0%{max-width:0;opacity:0;transform:translateX(-10px)}
-  25%{max-width:130px;opacity:1;transform:translateX(0)}
-  65%{max-width:130px;opacity:1;transform:translateX(0)}
-  85%{max-width:0;opacity:0;transform:translateX(10px)}
-  100%{max-width:0;opacity:0;transform:translateX(10px)}
-}
+@keyframes kaihaIn{0%{max-width:0;opacity:0;transform:translateX(-12px)}100%{max-width:130px;opacity:1;transform:translateX(0)}}
 @keyframes pop{0%{transform:scale(0.96)}100%{transform:scale(1)}}
 .page{animation:fadeUp 0.45s cubic-bezier(.2,.8,.2,1)}
 .card{transition:transform 0.3s cubic-bezier(.2,.8,.2,1), border-color 0.3s}
@@ -36,12 +30,13 @@ return(
 .shopCircle{transition:transform 0.3s}
 .shopCircle:active{transform:scale(0.92)}
 .hamburger span{transition:all 0.3s cubic-bezier(.4,0,.2,1);transform-origin:center}
-.kaihaSlide{
+.kaihaOnce{
   display:inline-block;
   overflow:hidden;
   white-space:nowrap;
   max-width:0;
-  animation:textSlide 3s ease-in-out infinite;
+  opacity:0;
+  animation:kaihaIn 0.9s cubic-bezier(.2,.8,.2,1) forwards;
 }
 `}</style>
 
@@ -49,7 +44,7 @@ return(
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:"1px solid #1a1a1a",position:"sticky",top:0,background:"rgba(10,10,10,0.96)",backdropFilter:"blur(12px)",zIndex:20}}>
 <div onClick={()=>setPg("home")} style={{display:"flex",alignItems:"center",gap:"12px"}}>
 <img src={LOGO} alt="K" style={{height:"72px",width:"72px",objectFit:"contain",borderRadius:"16px"}}/>
-<span className="kaihaSlide" style={{color:"#D4B78F",letterSpacing:"0.45em",fontSize:"18px",fontFamily:"serif",fontWeight:"600"}}>KAIHA</span>
+<span key={pg} className={pg==="home"?"kaihaOnce":""} style={{color:"#D4B78F",letterSpacing:"0.45em",fontSize:"18px",fontFamily:"serif",fontWeight:"600",display:"inline-block",overflow:pg==="home"?"hidden":"visible",whiteSpace:"nowrap",maxWidth:pg==="home"?undefined:"130px"}}>KAIHA</span>
 </div>
 <button onClick={()=>setMn(!mn)} className="hamburger" style={{background:"none",border:"none",display:"flex",flexDirection:"column",gap:"5px",width:"32px",height:"26px",justifyContent:"center"}}>
 <span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",transform:mn?"rotate(45deg) translate(5px,5px)":"none"}}></span>
@@ -88,4 +83,4 @@ return(
 </div>
 </div>
 );
-                                     }
+  }
