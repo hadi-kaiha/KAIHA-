@@ -1,76 +1,99 @@
-"use client";import{useState,useEffect,useRef}from"react";const L="/k-logo.png";const P=[{i:1,n:"Blazer",p:189,m:"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=300"},{i:2,n:"Bag",p:245,m:"https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=300"}];const R=[{id:1,u:"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",a:"@kaiha",t:"Fall 2026",d:"Luxury drop",h:"#KAIHA #SUKKUR",l:1243,k:false,s:false,c:[],o:"sys"},{id:2,u:"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",a:"@hadi_sukkur",t:"Sukkur Luxury",d:"From SUKKUR",h:"#HADI #2026",l:2892,k:false,s:false,c:[],o:"sys"},{id:3,u:"https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",a:"@kaiha",t:"Street Style",d:"Denim",h:"#Fashion",l:4521,k:false,s:false,c:[],o:"sys"}];
-export default function Home(){const[pg,setPg]=useState("home"),[mn,setMn]=useState(false),[ct,setCt]=useState<any[]>([]),[rl,setRl]=useState(R),[us,setUs]=useState<any>(null),[lg,setLg]=useState(false),[fm,setFm]=useState({n:"",g:"",c:""}),[cm,setCm]=useState(""),[ac,setAc]=useState<number|null>(null),[up,setUp]=useState(false),[uf,setUf]=useState({t:"",d:"",h:""}),[co,setCo]=useState(120),[my,setMy]=useState(false);const fr=useRef<HTMLInputElement>(null);
-useEffect(()=>{let s=localStorage.getItem("kaiha_user");if(s){let u=JSON.parse(s);setUs(u);setCo(u.co||120)}else setLg(true);let r=localStorage.getItem("kaiha_rl");if(r)setRl(JSON.parse(r))},[]);useEffect(()=>{localStorage.setItem("kaiha_rl",JSON.stringify(rl))},[rl]);
-const add=(p:any)=>setCt(c=>[...c,{...p,a:Date.now()}]);const tot=ct.reduce((a:any,b:any)=>a+b.p,0);
-const login=()=>{if(!fm.n||!fm.g||!fm.c)return alert("Fill");let u={name:fm.n,gmail:fm.g,contact:fm.c,id:Date.now(),co:120};localStorage.setItem("kaiha_user",JSON.stringify(u));setUs(u);setLg(false)};
-const need=()=>{if(!us){setLg(true);return 0}return 1};
-const like=(id:number)=>{if(!need())return;setRl(r=>r.map(x=>x.id===id?{...x,k:!x.k,l:x.k?x.l-1:x.l+1}:x));setCo(x=>x+1)};
-const sv=(id:number)=>{if(!need())return;setRl(r=>r.map(x=>x.id===id?{...x,s:!x.s}:x))};
-const addC=(id:number)=>{if(!cm.trim())return;if(!need())return;setRl(r=>r.map(x=>x.id===id?{...x,c:[...x.c,`${us.name}: ${cm}`]}:x));setCm("")};
-const upR=(e:any)=>{let f=e.target.files?.[0];if(!f)return;if(!uf.t)return alert("Title");let u=URL.createObjectURL(f);setRl(r=>[{id:Date.now(),u:u,a:`@${us.name}`,t:uf.t,d:uf.d,h:uf.h||"#KAIHA",l:0,k:false,s:false,c:[],o:us.name},...r]);setCo(c=>c+50);setUf({t:"",d:"",h:""});setUp(false);setPg("reels");setMy(true)};
-let myR=rl.filter(r=>r.o===us?.name);let show=my?myR:rl;
-return(<div style={{background:"#000",display:"flex",justifyContent:"center",minHeight:"100vh"}}><style>{`@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400&display=swap')`}</style>
+"use client";
+import {useState,useEffect} from "react";
+import { createClient } from "@supabase/supabase-js";
+
+const supabase = createClient(
+  "https://rlsmcomxugstuoerdam.supabase.co",
+  "sb_publishable_mxCJKSppCAnMe6SwT7tbiQ_4dlOy122"
+);
+
+const LOGO="/k-logo.png";
+const P=[
+{id:1,n:"Silk Blazer",pr:189,im:"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400"},
+{id:2,n:"Leather Bag",pr:245,im:"https://images.unsplash.com/photo-1548036328-c9fa89d128fa?w=400"},
+{id:3,n:"Denim Jacket",pr:120,im:"https://images.unsplash.com/photo-1596755094514-f87e34085b2c?w=400"},
+{id:4,n:"Evening Dress",pr:320,im:"https://images.unsplash.com/photo-1515372039744-b8f02a3ae446?w=400"},
+];
+
+export default function Home(){
+const [pg,setPg]=useState("home"),[mn,setMn]=useState(false),[cart,setCart]=useState<any[]>([]),[user,setUser]=useState<any>(null),[accounts,setAccounts]=useState<any[]>([]),[showLogin,setShowLogin]=useState(false),[form,setForm]=useState({name:"",gmail:"",contact:""}),[otp,setOtp]=useState(""),[step,setStep]=useState(1),[loading,setLoading]=useState(false);
+
+useEffect(()=>{
+const acc=localStorage.getItem("kaiha_accounts");if(acc)setAccounts(JSON.parse(acc));
+const s=localStorage.getItem("kaiha_user");if(s){setUser(JSON.parse(s))}else setShowLogin(true);
+},[]);
+
+const sendOtp=async()=>{
+if(!form.name||!form.gmail||!form.contact)return alert("All fields required");
+setLoading(true);
+const { error } = await supabase.auth.signInWithOtp({
+  email: form.gmail,
+  options:{ data:{ full_name:form.name, contact:form.contact }, emailRedirectTo: window.location.href }
+});
+setLoading(false);
+if(error) return alert("Error: "+error.message);
+setStep(2);
+alert(`✅ SECURE OTP sent to ${form.gmail} via Supabase!\nCheck Gmail inbox - KAIHA © HADI 2026`);
+};
+
+const verifyOtp=async()=>{
+if(otp.length!==6)return alert("Enter 6-digit OTP");
+setLoading(true);
+const { data, error } = await supabase.auth.verifyOtp({ email: form.gmail, token: otp, type: 'email' });
+setLoading(false);
+if(error) return alert("Wrong OTP: "+error.message);
+const u={...form,id:Date.now(),coins:120};const newAccs=[...accounts,u];setAccounts(newAccs);
+localStorage.setItem("kaiha_accounts",JSON.stringify(newAccs));localStorage.setItem("kaiha_user",JSON.stringify(u));setUser(u);setShowLogin(false);setStep(1);setOtp("");
+alert("🎉 Secure Login Success! © KAIHA - HADI SUKKUR 2026");
+};
+
+const need=()=>{if(!user){setShowLogin(true);return false}return true};
+const tot=cart.reduce((s:any,i:any)=>s+i.pr,0);
+
+return(
+<div style={{background:"#000",display:"flex",justifyContent:"center",minHeight:"100vh"}}>
+<style>{`@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400&display=swap');`}</style>
 <div style={{background:"#0a0a0a",width:"100%",maxWidth:"390px",minHeight:"100vh",paddingBottom:"90px",position:"relative",borderRadius:"28px",overflow:"hidden",color:"#fff"}}>
+
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid #1a1a1a",position:"sticky",top:0,background:"#0a0a0a",zIndex:20}}>
-<div onClick={()=>{setPg("home");setMy(false)}} style={{display:"flex",alignItems:"center",gap:"10px"}}><img src={L} style={{height:"50px",width:"50px",borderRadius:"12px"}}/><span style={{color:"#D4B78F",letterSpacing:"0.35em",fontFamily:"Montserrat"}}>KAIHA</span></div>
+<div onClick={()=>setPg("home")} style={{display:"flex",alignItems:"center",gap:"10px"}}><img src={LOGO} style={{height:"56px",width:"56px",borderRadius:"12px"}}/><span style={{color:"#D4B78F",letterSpacing:"0.35em",fontFamily:"Montserrat"}}>KAIHA</span></div>
 <button onClick={()=>setMn(!mn)} style={{background:"none",border:"none",display:"flex",flexDirection:"column",gap:"4px",width:"26px"}}><span style={{height:"2px",background:"#D4B78F",display:"block",transform:mn?"rotate(45deg) translate(4px,4px)":"none"}}/><span style={{height:"2px",background:"#D4B78F",display:"block",opacity:mn?0:1}}/><span style={{height:"2px",background:"#D4B78F",display:"block",transform:mn?"rotate(-45deg) translate(4px,-4px)":"none"}}/></button>
 </div>
 
-{pg==="home"&&<div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",padding:"16px"}}>{P.map((p:any)=><div key={p.i} style={{background:"#141414",borderRadius:"12px",padding:"8px",border:"1px solid #222"}}><img src={p.m} style={{width:"100%",height:"120px",borderRadius:"8px",objectFit:"cover"}}/><div style={{fontSize:"11px",marginTop:"5px"}}>{p.n} ${p.p}</div><button onClick={()=>{if(!need())return;add(p)}} style={{width:"100%",marginTop:"6px",border:"1px solid #D4B78F88",background:"none",color:"#D4B78F",borderRadius:"999px",padding:"6px",fontSize:"9px"}}>ADD</button></div>)}</div></div>}
+{pg==="home"&&<div><div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"10px",padding:"16px"}}>{P.map((p:any)=><div key={p.id} style={{background:"#141414",borderRadius:"12px",padding:"8px",border:"1px solid #222"}}><img src={p.im} style={{width:"100%",height:"120px",borderRadius:"8px",objectFit:"cover"}}/><div style={{fontSize:"11px",marginTop:"5px"}}>{p.n} ${p.pr}</div><button onClick={()=>{if(!need())return;setCart(c=>[...c,{...p,aid:Date.now()}])}} style={{width:"100%",marginTop:"6px",border:"1px solid #D4B78F88",background:"none",color:"#D4B78F",borderRadius:"999px",padding:"6px",fontSize:"9px"}}>ADD TO BAG</button></div>)}</div></div>}
 
-{pg==="reels"&&<div style={{height:"78vh",overflowY:"scroll",scrollSnapType:"y mandatory"}}>
-<div style={{padding:"10px 14px",display:"flex",gap:"12px"}}><b onClick={()=>setMy(false)} style={{color:!my?"#D4B78F":"#666",fontSize:"13px"}}>KAIHA TV</b><b onClick={()=>setMy(true)} style={{color:my?"#D4B78F":"#666",fontSize:"13px"}}>MY REELS ({myR.length})</b></div>
-{show.length===0?<div style={{textAlign:"center",marginTop:"50px",color:"#666",fontSize:"12px"}}>{my?"No reels - Upload karo":"No video"}</div>:show.map((r:any)=><div key={r.id} style={{height:"70vh",scrollSnapAlign:"start",position:"relative",margin:"8px 12px",borderRadius:"16px",overflow:"hidden",background:"#111"}}>
-<video src={r.u} autoPlay loop muted playsInline style={{width:"100%",height:"100%",objectFit:"cover"}} onClick={e=>{(e.target as HTMLVideoElement).muted=!(e.target as HTMLVideoElement).muted}}/>
-<div style={{position:"absolute",right:"8px",bottom:"90px",display:"flex",flexDirection:"column",gap:"12px",alignItems:"center"}}>
-<div onClick={()=>like(r.id)} style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"999px",background:r.k?"#D4B78F":"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}>❤</div><span style={{fontSize:"9px"}}>{r.l}</span></div>
-<div onClick={()=>setAc(ac===r.id?null:r.id)} style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"999px",background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}>💬</div><span style={{fontSize:"9px"}}>{r.c.length}</span></div>
-<div onClick={()=>{if(!need())return;navigator.share?navigator.share({title:r.t,url:r.u}):alert("Copied")}} style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"999px",background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}>↗</div><span style={{fontSize:"8px"}}>Share</span></div>
-<div onClick={()=>sv(r.id)} style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"999px",background:r.s?"#fff":"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}><span style={{color:r.s?"#000":"#fff"}}>★</span></div><span style={{fontSize:"8px"}}>{r.s?"Saved":"Save"}</span></div>
-<div onClick={()=>{if(!need())return;setRl([{...r,id:Date.now(),o:us.name,a:`@${us.name}`,t:r.t+" repost"},...rl])}} style={{textAlign:"center"}}><div style={{width:"40px",height:"40px",borderRadius:"999px",background:"rgba(0,0,0,0.6)",display:"flex",alignItems:"center",justifyContent:"center"}}>⟲</div><span style={{fontSize:"8px"}}>Repost</span></div>
-</div>
-<div style={{position:"absolute",bottom:"10px",left:"12px",right:"65px"}}><div style={{fontSize:"12px",fontWeight:"700"}}>{r.a} • {r.t}</div><div style={{fontSize:"11px",color:"#ddd"}}>{r.d}</div><div style={{fontSize:"10px",color:"#D4B78F"}}>{r.h}</div>
-{ac===r.id&&<div style={{background:"rgba(0,0,0,0.9)",borderRadius:"10px",padding:"8px",marginTop:"6px"}}>{r.c.map((c:string,i:number)=><div key={i} style={{fontSize:"10px",color:"#ccc",marginTop:"3px"}}>{c}</div>)}<div style={{display:"flex",gap:"5px",marginTop:"6px"}}><input value={cm} onChange={e=>setCm(e.target.value)} placeholder="Comment" style={{flex:1,background:"#222",border:"1px solid #333",borderRadius:"999px",padding:"6px 8px",color:"#fff",fontSize:"10px"}}/><button onClick={()=>addC(r.id)} style={{background:"#D4B78F",border:"none",borderRadius:"999px",padding:"6px 10px",fontSize:"9px",color:"#000",fontWeight:"700"}}>Post</button></div></div>}
-</div></div>)}
-<div style={{position:"sticky",bottom:"10px",display:"flex",justifyContent:"center",padding:"10px"}}><button onClick={()=>{if(!need())return;setUp(true)}} style={{background:"#D4B78F",color:"#000",border:"none",padding:"10px 20px",borderRadius:"999px",fontWeight:"800",fontSize:"11px"}}>+ Upload Reel</button></div>
-</div>}
+{pg==="profile"&&<div style={{padding:"18px"}}><div style={{textAlign:"center"}}><div style={{width:"64px",height:"64px",borderRadius:"999px",background:"#222",margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",border:"1px solid #D4B78F44"}}>{user?.name?.[0]||"H"}</div><div style={{marginTop:"8px",fontWeight:"700"}}>{user?.name||"Guest"}</div><div style={{color:"#888",fontSize:"10px"}}>{user?.gmail}</div><div style={{color:"#666",fontSize:"10px"}}>{user?.contact}</div><div style={{color:"#D4B78F",fontSize:"8px",marginTop:"4px"}}>✓ Verified via Supabase OTP</div></div>
+<div style={{marginTop:"16px"}}><b style={{fontSize:"12px"}}>Your Accounts ({accounts.length}) - Multi Login</b>{accounts.map((a:any,i:number)=><div key={i} onClick={()=>{localStorage.setItem("kaiha_user",JSON.stringify(a));setUser(a);setMn(false)}} style={{background:user?.id===a.id?"#1a1a1a":"#141414",border:`1px solid ${user?.id===a.id?"#D4B78F66":"#222"}`,borderRadius:"10px",padding:"10px",marginTop:"8px",display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:"12px",fontWeight:"600"}}>{a.name}</div><div style={{fontSize:"9px",color:"#888"}}>{a.gmail}</div></div><div style={{fontSize:"10px",color:user?.id===a.id?"#D4B78F":"#666"}}>{user?.id===a.id?"Active":"Switch"}</div></div>)}</div>
+<div style={{display:"flex",gap:"8px",marginTop:"14px"}}><button onClick={()=>{setShowLogin(true);setStep(1)}} style={{flex:1,background:"#D4B78F",color:"#000",border:"none",padding:"10px",borderRadius:"999px",fontSize:"11px",fontWeight:"800"}}>+ ADD ACCOUNT</button><button onClick={()=>{localStorage.removeItem("kaiha_user");setUser(null);setShowLogin(true)}} style={{flex:1,background:"#222",border:"1px solid #333",color:"#fff",padding:"10px",borderRadius:"999px",fontSize:"11px"}}>Logout</button></div>
+<div style={{marginTop:"12px",textAlign:"center",color:"#444",fontSize:"7px"}}>© KAIHA - HADI SUKKUR 2026 • Secure via Supabase</div></div>}
 
-{pg==="bag"&&<div style={{padding:"14px"}}><b>Bag {ct.length} ${tot}</b>{ct.map((c:any,i:number)=><div key={c.a} style={{background:"#141414",borderRadius:"10px",padding:"10px",display:"flex",gap:"10px",marginTop:"8px"}}><img src={c.m} style={{width:"40px",height:"40px",borderRadius:"8px"}}/><div style={{flex:1,fontSize:"11px"}}>{c.n}</div><button onClick={()=>setCt(ct.filter((_:any,j:number)=>j!==i))} style={{background:"none",border:"1px solid #333",color:"#888",borderRadius:"999px",width:"24px",height:"24px"}}>✕</button></div>)}</div>}
+{pg==="bag"&&<div style={{padding:"14px"}}><b>Bag {cart.length} - ${tot}</b>{cart.map((c:any,i:number)=><div key={c.aid} style={{background:"#141414",borderRadius:"10px",padding:"10px",display:"flex",gap:"10px",marginTop:"8px"}}><img src={c.im} style={{width:"40px",height:"40px",borderRadius:"8px"}}/><div style={{flex:1,fontSize:"11px"}}>{c.n}</div><button onClick={()=>setCart(cart.filter((_:any,j:number)=>j!==i))} style={{background:"none",border:"1px solid #333",color:"#888",borderRadius:"999px",width:"24px",height:"24px"}}>✕</button></div>)}</div>}
 
-{pg==="profile"&&<div style={{padding:"18px",textAlign:"center"}}><div style={{width:"60px",height:"60px",borderRadius:"999px",background:"#222",margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"center",fontSize:"22px",border:"1px solid #D4B78F44"}}>{us?.name?.[0]||"H"}</div><div style={{marginTop:"8px",fontWeight:"700"}}>{us?.name||"HADI"}</div><div style={{color:"#888",fontSize:"10px"}}>{us?.gmail}</div><div style={{color:"#D4B78F",fontSize:"11px",marginTop:"4px"}}>🪙 {co} Coins • {myR.length} Reels</div>
-<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"8px",marginTop:"14px"}}><div style={{background:"#141414",borderRadius:"10px",padding:"10px",border:"1px solid #222"}}><div style={{fontSize:"18px",fontWeight:"800",color:"#D4B78F"}}>{myR.length}</div><div style={{fontSize:"9px",color:"#888"}}>My Reels</div></div><div style={{background:"#141414",borderRadius:"10px",padding:"10px",border:"1px solid #222"}}><div style={{fontSize:"18px",fontWeight:"800",color:"#D4B78F"}}>{co}</div><div style={{fontSize:"9px",color:"#888"}}>Coins</div></div></div>
-<div style={{display:"flex",gap:"8px",marginTop:"14px"}}><button onClick={()=>{setPg("reels");setMy(true)}} style={{flex:1,background:"#141414",border:"1px solid #D4B78F44",color:"#D4B78F",padding:"9px",borderRadius:"999px",fontSize:"10px",fontWeight:"700"}}>MY REELS</button><button onClick={()=>setUp(true)} style={{flex:1,background:"#D4B78F",color:"#000",border:"none",padding:"9px",borderRadius:"999px",fontSize:"10px",fontWeight:"800"}}>+ UPLOAD</button></div>
-<button onClick={()=>{localStorage.removeItem("kaiha_user");setUs(null);setLg(true)}} style={{width:"100%",marginTop:"12px",background:"#222",border:"1px solid #333",color:"#fff",padding:"9px",borderRadius:"999px",fontSize:"10px"}}>Logout</button>
-</div>}
-
-<div style={{textAlign:"center",padding:"16px 0 8px",borderTop:"1px solid #1a1a1a",marginTop:"16px"}}><div style={{color:"#D4B78F",fontSize:"9px",letterSpacing:"0.3em",fontFamily:"Montserrat"}}>KAIHA</div><div style={{color:"#666",fontSize:"7px",marginTop:"4px"}}>© KAIHA - HADI SUKKUR 2026</div></div>
+<div style={{textAlign:"center",padding:"16px 0 8px",borderTop:"1px solid #1a1a1a",marginTop:"16px"}}><div style={{color:"#D4B78F",fontSize:"9px",letterSpacing:"0.3em",fontFamily:"Montserrat"}}>KAIHA</div><div style={{color:"#666",fontSize:"7px",marginTop:"4px"}}>© KAIHA - HADI SUKKUR 2026 • Secure OTP</div></div>
 
 <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"390px",background:"rgba(15,15,15,0.96)",borderTop:"1px solid #222",borderRadius:"20px 20px 0 0",display:"flex",justifyContent:"space-around",padding:"12px 0 16px",zIndex:50}}>
-<div onClick={()=>{setPg("home");setMy(false)}} style={{color:pg==="home"&&!my?"#D4B78F":"#666",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={pg==="home"&&!my?2:1.4}><path d="M3 10L12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10z"/></svg><span style={{fontSize:"8px"}}>Home</span></div>
-<div onClick={()=>{if(!need())return;setPg("home")}} style={{color:pg==="shop"?"#D4B78F":"#666",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg><span style={{fontSize:"8px"}}>Shop</span></div>
-<div onClick={()=>{if(!need())return;setPg("reels");setMy(false)}} style={{color:pg==="reels"&&!my?"#D4B78F":"#666",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={pg==="reels"&&!my?2:1.4}><polygon points="6 3 20 12 6 21 6 3"/></svg><span style={{fontSize:"8px"}}>Reels</span></div>
-<div onClick={()=>{if(!need())return;setPg("bag")}} style={{color:pg==="bag"?"#D4B78F":"#666",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px",position:"relative"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg>{ct.length>0&&<span style={{position:"absolute",top:"-5px",right:"0",background:"#D4B78F",color:"#000",fontSize:"7px",minWidth:"12px",height:"12px",borderRadius:"999px",display:"flex",alignItems:"center",justifyContent:"center"}}>{ct.length}</span>}<span style={{fontSize:"8px"}}>Bag</span></div>
+<div onClick={()=>setPg("home")} style={{color:pg==="home"?"#D4B78F":"#666",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6"><path d="M3 10L12 3l9 7v10a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1V10z"/></svg><span style={{fontSize:"8px"}}>Home</span></div>
 <div onClick={()=>{if(!need())return;setPg("profile")}} style={{color:pg==="profile"?"#D4B78F":"#666",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><circle cx="12" cy="8" r="3"/><path d="M5 19a7 7 0 0 1 14 0"/></svg><span style={{fontSize:"8px"}}>Profile</span></div>
+<div onClick={()=>{if(!need())return;setPg("bag")}} style={{color:pg==="bag"?"#D4B78F":"#666",display:"flex",flexDirection:"column",alignItems:"center",gap:"3px"}}><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M6 7h12l-1 13H7L6 7z"/><path d="M9 7V5a3 3 0 0 1 6 0v2"/></svg><span style={{fontSize:"8px"}}>Bag</span></div>
 </div>
 
-{lg&&<div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.88)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"}}><div style={{background:"#141414",borderRadius:"16px",padding:"18px",width:"100%",maxWidth:"300px",border:"1px solid #D4B78F44"}}>
-<div style={{textAlign:"center"}}><div style={{color:"#D4B78F",letterSpacing:"0.3em"}}>KAIHA</div><div style={{color:"#888",fontSize:"9px",marginTop:"3px"}}>Login • © HADI 2026</div></div>
-<input value={fm.n} onChange={e=>setFm({...fm,n:e.target.value})} placeholder="Name" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"10px",fontSize:"12px"}}/>
-<input value={fm.g} onChange={e=>setFm({...fm,g:e.target.value})} placeholder="Gmail" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"8px",fontSize:"12px"}}/>
-<input value={fm.c} onChange={e=>setFm({...fm,c:e.target.value})} placeholder="Contact" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"8px",fontSize:"12px"}}/>
-<button onClick={login} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"10px",borderRadius:"999px",fontWeight:"800",fontSize:"11px"}}>LOGIN</button></div></div>}
-
-{up&&<div style={{position:"fixed",inset:0,zIndex:201,background:"rgba(0,0,0,0.92)",display:"flex",alignItems:"center",justifyContent:"center",padding:"18px"}}><div style={{background:"#141414",borderRadius:"16px",padding:"16px",width:"100%",maxWidth:"300px",border:"1px solid #D4B78F44"}}>
-<div style={{display:"flex",justifyContent:"space-between"}}><b style={{color:"#D4B78F",fontSize:"13px"}}>Upload Reel</b><button onClick={()=>setUp(false)} style={{width:"24px",height:"24px",borderRadius:"999px",border:"1px solid #444",background:"none",color:"#fff"}}>✕</button></div>
-<input value={uf.t} onChange={e=>setUf({...uf,t:e.target.value})} placeholder="Title" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"10px",fontSize:"12px"}}/>
-<input value={uf.d} onChange={e=>setUf({...uf,d:e.target.value})} placeholder="Description" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"8px",fontSize:"12px"}}/>
-<input value={uf.h} onChange={e=>setUf({...uf,h:e.target.value})} placeholder="#hashtags" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#D4B78F",marginTop:"8px",fontSize:"11px"}}/>
-<input ref={fr} type="file" accept="video/*" onChange={upR} style={{display:"none"}}/>
-<button onClick={()=>fr.current?.click()} style={{width:"100%",marginTop:"10px",background:"#222",border:"1px dashed #D4B78F66",color:"#D4B78F",padding:"10px",borderRadius:"10px",fontSize:"11px"}}>📹 Select Video +50 Coins</button>
-<button onClick={()=>fr.current?.click()} style={{width:"100%",marginTop:"8px",background:"#D4B78F",color:"#000",border:"none",padding:"10px",borderRadius:"999px",fontWeight:"800",fontSize:"11px"}}>UPLOAD</button>
+{showLogin&&<div style={{position:"fixed",inset:0,zIndex:200,background:"rgba(0,0,0,0.92)",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px"}}>
+<div style={{background:"#141414",borderRadius:"16px",padding:"18px",width:"100%",maxWidth:"320px",border:"1px solid #D4B78F44"}}>
+{step===1?<>
+<div style={{textAlign:"center"}}><div style={{color:"#D4B78F",letterSpacing:"0.3em"}}>KAIHA SECURE</div><div style={{color:"#888",fontSize:"9px",marginTop:"3px"}}>Supabase OTP Login • © HADI 2026</div></div>
+<input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Full Name" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"10px",fontSize:"12px"}}/>
+<input value={form.gmail} onChange={e=>setForm({...form,gmail:e.target.value})} placeholder="Gmail (OTP will be sent)" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"8px",fontSize:"12px"}}/>
+<input value={form.contact} onChange={e=>setForm({...form,contact:e.target.value})} placeholder="Contact Number" style={{width:"100%",background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"8px",fontSize:"12px"}}/>
+<button onClick={sendOtp} disabled={loading} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"11px",borderRadius:"999px",fontWeight:"800",fontSize:"11px",opacity:loading?0.6:1}}>{loading?"SENDING...":"SEND OTP to Gmail (Secure)"}</button>
+<div style={{marginTop:"8px",color:"#666",fontSize:"8px",textAlign:"center"}}>OTP via Supabase - Real Gmail verification<br/>Secure customer accounts</div>
+</>:<>
+<div style={{textAlign:"center"}}><div style={{color:"#D4B78F"}}>Enter OTP</div><div style={{color:"#888",fontSize:"9px",marginTop:"4px"}}>Sent to {form.gmail}</div></div>
+<input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="6-digit OTP from Gmail" maxLength={6} style={{width:"100%",background:"#0a0a0a",border:"1px solid #D4B78F66",borderRadius:"8px",padding:"12px",color:"#fff",marginTop:"12px",fontSize:"16px",textAlign:"center",letterSpacing:"0.3em"}}/>
+<button onClick={verifyOtp} disabled={loading} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"11px",borderRadius:"999px",fontWeight:"800",fontSize:"11px"}}>{loading?"VERIFYING...":"VERIFY OTP & LOGIN"}</button>
+<button onClick={()=>setStep(1)} style={{width:"100%",marginTop:"8px",background:"none",border:"1px solid #333",color:"#888",padding:"9px",borderRadius:"999px",fontSize:"10px"}}>← Change Email</button>
+</>}
 </div></div>}
 
-{mn&&<div style={{position:"fixed",inset:0,zIndex:99,display:"flex",justifyContent:"flex-end"}}><div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)"}} onClick={()=>setMn(false)}/><div style={{position:"relative",width:"75%",background:"#0a0a0a",height:"100%",padding:"16px",borderLeft:"1px solid #D4B78F33"}}><div style={{display:"flex",justifyContent:"space-between"}}><span style={{color:"#D4B78F",letterSpacing:"0.3em",fontSize:"13px"}}>KAIHA</span><button onClick={()=>setMn(false)} style={{width:"24px",height:"24px",borderRadius:"999px",border:"1px solid #D4B78F44",background:"none",color:"#D4B78F"}}>✕</button></div>
-{[{l:"Home",v:"home"},{l:"KAIHA TV",v:"reels"},{l:"MY REELS",v:"my"},{l:"Profile",v:"profile"}].map((it:any)=><div key={it.l} onClick={()=>{if(it.v==="my"){setPg("reels");setMy(true);setMn(false);return}setPg(it.v==="my"?"reels":it.v);setMy(it.v==="my");setMn(false)}} style={{padding:"10px",borderRadius:"8px",border:"1px solid #222",marginTop:"8px",color:pg===it.v||(it.v==="my"&&my)?"#D4B78F":"#ccc",fontSize:"12px"}}>{it.l} {it.v==="my"?`(${myR.length})`:""}</div>)}<div style={{marginTop:"14px",color:"#888",fontSize:"10px"}}>Hi {us?.name||"Guest"} 🪙 {co}</div><div style={{marginTop:"10px",textAlign:"center",borderTop:"1px solid #222",paddingTop:"8px",color:"#444",fontSize:"7px"}}>© KAIHA - HADI SUKKUR 2026</div></div></div>}
-</div></div>);
-                                                                                                                                                                                                                                                                            }
+</div></div>
+);
+                          }
