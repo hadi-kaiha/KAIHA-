@@ -1,51 +1,94 @@
 "use client";
-import { useState, useRef, useEffect } from "react";
-const circles = [
- { name:"GEN Z DRIP", img:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200" },
- { name:"WINTER EDIT", img:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=200" },
- { name:"T-SHIRTS", img:"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200" },
- { name:"MEN", img:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200" },
- { name:"WOMEN", img:"https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200" },
- { name:"PANTS", img:"https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=200" },
-];
-const prods = [
- {id:1,name:"Street Tee",price:1999,gen:"Male",sub:"T-Shirts",img:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500",brand:"KAIHA"},
- {id:2,name:"Wool Hoodie",price:3499,gen:"Male",sub:"Winter Collection",img:"https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500",brand:"KAIHA"},
- {id:3,name:"Cargo Pants",price:2999,gen:"Male",sub:"Pants",img:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500",brand:"KAIHA"},
- {id:4,name:"Crop Top",price:1899,gen:"Female",sub:"Tops",img:"https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500",brand:"KAIHA"},
- {id:5,name:"Boy Tee",price:1299,gen:"Boy",sub:"T-Shirts",img:"https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=500",brand:"KAIHA BOY"},
- {id:6,name:"Girl Frock",price:1999,gen:"Girl",sub:"Summer Fits",img:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500",brand:"KAIHA GIRL"},
-];
+import { useState } from "react";
+
 export default function Home(){
- const [act,setAct]=useState("GEN Z DRIP");
- const [gen,setGen]=useState("Both");
- const [cart,setCart]=useState<any[]>([]);
- const [showCart,setShowCart]=useState(false);
- const [showProfile,setShowProfile]=useState(false);
- const [coins,setCoins]=useState(120);
- const [shopName,setShopName]=useState("HADI COLLECTION");
- const [reels,setReels]=useState([{id:1,product:"Oversized Tee",price:1999,video:"https://www.w3schools.com/html/mov_bbb.mp4",thumb:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400"}]);
- const [showReel,setShowReel]=useState<any>(null);
- const fileRef=useRef<HTMLInputElement>(null);
- useEffect(()=>{setShopName(localStorage.getItem("kaiha_shop_name")||"HADI COLLECTION")},[]);
- const add=(p:any)=>{setCart(s=>{const e=s.find((x:any)=>x.id===p.id); if(e) return s.map((x:any)=>x.id===p.id?{...x,qty:x.qty+1}:x); return [...s,{...p,qty:1}]}); setShowCart(true)};
- const filt=prods.filter(p=>{if(gen!=="Both"&&p.gen!==gen) return false; if(act==="MEN"&&p.gen!=="Male") return false; if(act==="WOMEN"&&p.gen!=="Female") return false; return true;});
- return(
- <div className="bg-black text-white min-h-screen pb-32">
- <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap'); *{font-family:'Inter',sans-serif!important}`}</style>
- <nav className="flex justify-between items-center px-4 h-[56px] sticky top-0 bg-black z-40 border-b border-zinc-900">
- <div className="flex items-center gap-2.5"><div className="w-[36px] h-[36px] rounded-lg bg-[#111] border border-zinc-800 flex items-center justify-center"><span className="font-bold text-[18px] text-[#a855f7]">K</span></div><h1 className="font-bold text-[15px] tracking-[0.28em] text-[#D4AF37]">KAIHA</h1></div>
- <div className="flex items-center gap-3"><span className="bg-[#1a1a1a] border border-zinc-800 text-[10px] px-2 py-1 rounded-full">🪙 {coins}</span><button onClick={()=>setShowCart(true)} className="w-5 h-5 relative">🛒{cart.length>0&&<span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[8px] w-3 h-3 rounded-full flex items-center justify-center">{cart.reduce((a:any,b:any)=>a+b.qty,0)}</span>}</button><button onClick={()=>setShowProfile(true)} className="w-5 h-5">👤</button></div>
- </nav>
- <div className="p-3"><div className="bg-[#1a1a1a] rounded-full flex items-center px-4 h-[44px] border border-zinc-800"><input placeholder="Search for products" className="bg-transparent flex-1 text-[13px] outline-none" /></div></div>
- <div className="px-2 py-4 flex gap-4 overflow-x-auto border-b border-zinc-900">{circles.map(c=><button key={c.name} onClick={()=>setAct(c.name)} className="flex flex-col items-center gap-2 min-w-[68px]"><img src={c.img} className={`w-[64px] h-[64px] rounded-full object-cover border-2 ${act===c.name?"border-yellow-500":"border-zinc-700"}`} alt="" /><span className="text-[10px]">{c.name}</span></button>)}</div>
- <div className="flex gap-2 px-2 py-3 overflow-x-auto">{["Both","Male","Female","Boy","Girl","Child"].map(g=><button key={g} onClick={()=>setGen(g)} className={`px-4 h-[34px] rounded-full text-[13px] border shrink-0 ${gen===g?"bg-white text-black":"bg-black border-zinc-700"}`}>{g}</button>)}</div>
- <div className="px-4 py-2 text-[11px] text-zinc-400">Showing {filt.length} • {act} • 45.{shopName} • 37.Refer 38.Spin 39.Black 44.OTP 63.QR</div>
- <div className="p-3 grid grid-cols-2 gap-3">{filt.map(p=><div key={p.id} className="bg-[#121212] rounded-2xl overflow-hidden border border-zinc-900"><div className="relative"><img src={p.img} className="w-full aspect-[3/4] object-cover object-top" alt="" /><span className="absolute top-2 left-2 bg-black/70 px-2 py-0.5 rounded-full text-[8px]">{p.gen}</span></div><div className="p-3"><h4 className="text-[10px] text-zinc-400">{p.brand}</h4><h3 className="text-[12px] truncate">{p.name}</h3><p className="font-bold text-[13px]">Rs. {p.price}</p><button onClick={()=>add(p)} className="mt-2 w-full bg-white text-black text-[11px] font-bold h-[32px] rounded-full">ADD TO CART</button><button onClick={()=>{const m=`I want ${p.name} from ${shopName}`; window.open(`https://wa.me/923000000000?text=${m}`,"_blank")}} className="mt-2 w-full bg-[#1a1a1a] border border-zinc-800 text-[9px] h-[26px] rounded-full">34.Chat 35.Offer 62.360° 36.AI</button></div></div>)}</div>
- <div className="p-4 bg-[#0a0a0a] mt-4 border-y border-zinc-900"><div className="flex justify-between"><h2 className="font-bold text-[14px]">KAIHA TV 41.Live 32.Rider</h2><button onClick={()=>fileRef.current?.click()} className="bg-white text-black px-3 h-[28px] rounded-full text-[11px]">+ Upload</button></div><input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={e=>{const f=e.target.files?.[0]; if(f){const u=URL.createObjectURL(f); setReels([{id:Date.now(),product:"New Drop",price:1999,video:u,thumb:prods[0].img},...reels])}}} /><div className="flex gap-3 overflow-x-auto mt-3">{reels.map((r:any)=><div key={r.id} onClick={()=>setShowReel(r)} className="min-w-[150px] w-[150px] bg-zinc-900 rounded-xl overflow-hidden relative"><img src={r.thumb} className="w-full h-[200px] object-cover" alt="" /><div className="absolute bottom-0 p-2 bg-gradient-to-t from-black w-full"><p className="text-[11px] font-bold">{r.product}</p><p className="text-[10px] text-yellow-500">Rs. {r.price}</p></div></div>)}</div></div>
- {showReel&&<div className="fixed inset-0 bg-black z-[80] flex flex-col"><div className="p-4 flex justify-between border-b border-zinc-900"><h3 className="font-bold">{showReel.product}</h3><button onClick={()=>setShowReel(null)} className="w-8 h-8 bg-zinc-800 rounded-full">✕</button></div><video src={showReel.video} controls autoPlay className="flex-1 object-contain bg-black"/><button onClick={()=>{add(showReel); setShowReel(null)}} className="m-4 bg-yellow-500 text-black py-3 rounded-xl font-bold">BUY NOW 63.QR</button></div>}
- {showCart&&<div className="fixed inset-0 bg-black/80 z-[60] flex justify-end"><div className="bg-[#121212] w-[92%] max-w-sm h-full p-4"><div className="flex justify-between mb-4"><h2 className="font-bold">Cart 65.Urdu ٹوکری</h2><button onClick={()=>setShowCart(false)} className="w-8 h-8 bg-zinc-800 rounded-full">✕</button></div>{cart.map((i:any)=><div key={i.id} className="bg-zinc-900 p-3 rounded-xl mb-3">{i.name} Qty {i.qty}</div>)}<button className="mt-4 bg-yellow-500 text-black w-full h-[44px] rounded-xl font-bold">Checkout Rs. {cart.reduce((a:any,b:any)=>a+b.price*b.qty,0)}</button><p className="text-[10px] text-zinc-400 mt-2">44.COD OTP 1234 Verified - 37.Refer - 48.Push - 50.Coins - 63.Blockchain QR</p></div></div>}
- {showProfile&&<div className="fixed inset-0 bg-black/80 z-[60] flex justify-end"><div className="bg-[#121212] w-[92%] max-w-sm h-full p-4"><h2 className="font-bold">Profile 37.Refer 38.Spin 39.Black 45.Shop {shopName}</h2><button onClick={()=>setShowProfile(false)} className="w-8 h-8 bg-zinc-800 rounded-full mt-4">✕ Close</button></div></div>}
- </div>
- );
+  const [showMenu, setShowMenu] = useState(false);
+  const [activeTab, setActiveTab] = useState("Home");
+
+  // CUSTOMER ke liye hi menu - NO Admin/Rider/Seller
+  const publicMenu = [
+    { icon:"🏠", name:"Home", path:"/" },
+    { icon:"🛍️", name:"Shop", path:"/" },
+    { icon:"📦", name:"My Orders", path:"/" },
+    { icon:"♡", name:"Wishlist", path:"/" },
+    { icon:"👑", name:"Black Card", path:"/" },
+    { icon:"🪙", name:"Coins & Rewards", path:"/" },
+    { icon:"📞", name:"Contact Us", path:"/" },
+    { icon:"ℹ️", name:"About Us", path:"/" },
+    { icon:"❓", name:"FAQs", path:"/" },
+    { icon:"📄", name:"Terms & Conditions", path:"/" },
+    { icon:"🔒", name:"Privacy Policy", path:"/" },
+    { icon:"↩️", name:"Return Policy", path:"/" },
+    { icon:"🚚", name:"Shipping Info", path:"/" },
+    { icon:"🎧", name:"Help Center", path:"/" },
+  ];
+
+  return(
+    <div className="bg-black text-white min-h-screen pb-[90px]">
+      <style>{`*{font-family:'Inter',sans-serif}`}</style>
+
+      {/* HEADER - Purple K Logo + Hamburger right corner */}
+      <nav className="flex justify-between items-center px-4 h-[68px] sticky top-0 bg-black z-40">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 bg-black flex items-center justify-center"><span className="text-[#a855f7] text-[36px] font-bold" style={{fontFamily:"serif"}}>K</span></div>
+          <h1 className="tracking-[0.4em] text-[#D4AF37] text-[20px]">KAIHA</h1>
+        </div>
+        <button onClick={()=>setShowMenu(true)} className="text-[#D4AF37] text-[26px]">☰</button>
+      </nav>
+
+      <div className="px-4">
+        <div className="bg-[#111] rounded-full h-[44px] flex items-center px-4 gap-3 border border-[#D4AF37]/50">
+          <span>🔍</span><input placeholder="Search for products, styles, brands..." className="bg-transparent flex-1 text-[13px] outline-none text-zinc-400" />
+        </div>
+      </div>
+
+      <div className="mx-4 mt-4 rounded-2xl h-[140px] bg-[#111] relative overflow-hidden border border-zinc-800">
+        <img src="https://images.unsplash.com/photo-1483985988355-763728e1935b?w=600" className="absolute inset-0 w-full h-full object-cover opacity-60" alt="" />
+        <div className="relative p-4"><p className="text-[#D4AF37] text-[11px]">NEW ARRIVALS</p><p className="text-[22px] font-serif">Fall Collection 2026</p><p className="text-[11px] text-zinc-300">Luxury. Timeless. Curated for you.</p><button className="mt-2 bg-[#D4AF37] text-black text-[11px] px-4 py-1.5 rounded-md font-bold">SHOP NOW</button></div>
+      </div>
+
+      <div className="px-4 mt-5">
+        <div className="flex justify-between"><h3 className="text-[14px] font-bold">Shop by Style</h3><span className="text-[11px] text-[#D4AF37]">See all ›</span></div>
+        <div className="flex gap-4 mt-2 overflow-x-auto">
+          {["Minimal","Evening","Casual","Streetwear","Accessories"].map(n=><div key={n} className="min-w-[60px] flex flex-col items-center"><div className="w-14 h-14 rounded-full bg-[#111] border border-[#D4AF37]/50"></div><span className="text-[10px] mt-1">{n}</span></div>)}
+        </div>
+      </div>
+
+      <div className="px-4 mt-5">
+        <div className="flex justify-between"><h3 className="text-[14px] font-bold">Trending Now</h3><span className="text-[11px] text-[#D4AF37]">See all ›</span></div>
+        <div className="grid grid-cols-2 gap-3 mt-2">
+          <div className="bg-[#111] rounded-xl p-2 border border-zinc-800"><div className="h-[140px] bg-black rounded-lg"></div><p className="text-[11px] mt-2 text-center">Silk Blazer</p><p className="text-[11px] text-[#D4AF37] text-center">$189.00</p><button className="w-full mt-2 border border-[#D4AF37] text-[#D4AF37] text-[10px] h-7 rounded-md">ADD TO CART</button></div>
+          <div className="bg-[#111] rounded-xl p-2 border border-zinc-800"><div className="h-[140px] bg-black rounded-lg"></div><p className="text-[11px] mt-2 text-center">Leather Bag</p><p className="text-[11px] text-[#D4AF37] text-center">$245.00</p><button className="w-full mt-2 border border-[#D4AF37] text-[#D4AF37] text-[10px] h-7 rounded-md">ADD TO CART</button></div>
+        </div>
+      </div>
+
+      {/* BOTTOM NAV - Home Shop Reels Bag Profile */}
+      <div className="fixed bottom-0 left-0 right-0 bg-[#111] border-t border-[#D4AF37] rounded-t-3xl flex justify-around py-3 z-40">
+        {[
+          {name:"Home", icon:"🏠"},
+          {name:"Shop", icon:"👜"},
+          {name:"Reels", icon:"▶️"},
+          {name:"Bag", icon:"🛍️"},
+          {name:"Profile", icon:"👤"},
+        ].map(t=><button key={t.name} onClick={()=>setActiveTab(t.name)} className={`flex flex-col items-center ${activeTab===t.name?"text-[#D4AF37]":"text-zinc-500"}`}><span>{t.icon}</span><span className="text-[10px]">{t.name}</span></button>)}
+      </div>
+
+      {/* SECURE DRAWER - NO Admin/Rider/Seller */}
+      {showMenu && (
+        <div className="fixed inset-0 z-[100] flex justify-end">
+          <div className="absolute inset-0 bg-black/70" onClick={()=>setShowMenu(false)}></div>
+          <div className="relative w-[78%] bg-[#0a0a0a] h-full p-5 rounded-l-2xl border-l border-[#D4AF37]/30 overflow-y-auto">
+            <div className="flex justify-between items-center mb-5">
+              <div className="flex items-center gap-2"><span className="text-[#a855f7] text-[28px] font-bold">K</span><span className="tracking-[0.3em] text-[#D4AF37]">KAIHA</span></div>
+              <button onClick={()=>setShowMenu(false)} className="w-7 h-7 border border-[#D4AF37] rounded-full text-[#D4AF37]">✕</button>
+            </div>
+            {publicMenu.map(m=>(
+              <button key={m.name} className="w-full flex gap-3 py-3 text-left text-[13px] text-[#e8d5a0]"><span>{m.icon}</span>{m.name}</button>
+            ))}
+            <p className="text-[10px] text-zinc-600 text-center mt-6">v2.4.1 • KAIHA Luxury Fashion 2026</p>
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
