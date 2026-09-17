@@ -1,159 +1,51 @@
-  "use client";
+"use client";
 import { useState, useRef, useEffect } from "react";
-
-const fashionCircles = ["GEN Z DRIP","WINTER EDIT","SUMMER FITS","T-SHIRTS","MEN","WOMEN","PANTS","SLIPPERS"];
-const circleImages:any = {
-"GEN Z DRIP":"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200",
-"WINTER EDIT":"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=200",
-"SUMMER FITS":"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=200",
-"T-SHIRTS":"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200",
-"MEN":"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200",
-"WOMEN":"https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200",
-"PANTS":"https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=200",
-"SLIPPERS":"https://images.unsplash.com/photo-1543163521-1bf539c55dd2?w=200"
-};
-const genderFilters = ["Both","Male","Female","Boy","Girl","Child"];
-const allProducts = [
-{ id:1, name:"Oversized Street Tee", price:1999, mrp:2999, sub:"T-Shirts", gender:"Male", circle:"GEN Z DRIP", img:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500", brand:"KAIHA" },
-{ id:2, name:"Wool Blend Hoodie", price:3499, mrp:4999, sub:"Winter Collection", gender:"Male", circle:"WINTER EDIT", img:"https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500", brand:"KAIHA" },
-{ id:3, name:"Baggy Cargo Pants", price:2999, mrp:4599, sub:"Pants", gender:"Male", circle:"PANTS", img:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500", brand:"KAIHA" },
-{ id:4, name:"Premium Crop Top", price:1899, mrp:2599, sub:"Tops", gender:"Female", circle:"GEN Z DRIP", img:"https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500", brand:"KAIHA WOMAN" },
-{ id:5, name:"Boy Street Tee", price:1299, mrp:1899, sub:"T-Shirts", gender:"Boy", circle:"GEN Z DRIP", img:"https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=500", brand:"KAIHA BOY" },
-{ id:6, name:"Girl Summer Frock", price:1999, mrp:2799, sub:"Summer Fits", gender:"Girl", circle:"SUMMER FITS", img:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500", brand:"KAIHA GIRL" },
+const circles = [
+ { name:"GEN Z DRIP", img:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=200" },
+ { name:"WINTER EDIT", img:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?w=200" },
+ { name:"T-SHIRTS", img:"https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?w=200" },
+ { name:"MEN", img:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=200" },
+ { name:"WOMEN", img:"https://images.unsplash.com/photo-1490481651871-ab68de25d43d?w=200" },
+ { name:"PANTS", img:"https://images.unsplash.com/photo-1594633312681-425c7b97ccd1?w=200" },
 ];
-const colors = [{name:"Black", hex:"#000"}, {name:"White", hex:"#fff"}, {name:"Purple", hex:"#a855f7"}, {name:"Beige", hex:"#D4AF37"}];
-const sizes = ["S","M","L","XL"];
-
+const prods = [
+ {id:1,name:"Street Tee",price:1999,gen:"Male",sub:"T-Shirts",img:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=500",brand:"KAIHA"},
+ {id:2,name:"Wool Hoodie",price:3499,gen:"Male",sub:"Winter Collection",img:"https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=500",brand:"KAIHA"},
+ {id:3,name:"Cargo Pants",price:2999,gen:"Male",sub:"Pants",img:"https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=500",brand:"KAIHA"},
+ {id:4,name:"Crop Top",price:1899,gen:"Female",sub:"Tops",img:"https://images.unsplash.com/photo-1469334031218-e382a71b716b?w=500",brand:"KAIHA"},
+ {id:5,name:"Boy Tee",price:1299,gen:"Boy",sub:"T-Shirts",img:"https://images.unsplash.com/photo-1503944583220-79d8926ad5e2?w=500",brand:"KAIHA BOY"},
+ {id:6,name:"Girl Frock",price:1999,gen:"Girl",sub:"Summer Fits",img:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?w=500",brand:"KAIHA GIRL"},
+];
 export default function Home(){
-const [activeCircle,setActiveCircle] = useState("GEN Z DRIP");
-const [gender,setGender] = useState("Both");
-const [sub,setSub] = useState("All");
-const [cartItems,setCartItems] = useState<any[]>([]);
-const [showCart,setShowCart] = useState(false);
-const [showWishlist,setShowWishlist] = useState(false);
-const [showProfile,setShowProfile] = useState(false);
-const [showBell,setShowBell] = useState(false);
-const [isLoggedIn,setIsLoggedIn] = useState(false);
-const [coins,setCoins] = useState(120);
-const [shopOpen,setShopOpen] = useState(true);
-const [shopName,setShopName] = useState("KAIHA STORE");
-const [lang,setLang] = useState("en");
-const [isBlackCard,setIsBlackCard] = useState(false);
-const [spinResult,setSpinResult] = useState<number|null>(null);
-const [showSpin,setShowSpin] = useState(false);
-const [wishlist,setWishlist] = useState<any[]>([]);
-const [showTracking,setShowTracking] = useState(false);
-const [otpSent,setOtpSent] = useState(false);
-const [otp,setOtp] = useState("");
-const [showReel,setShowReel] = useState<any>(null);
-const fileRef = useRef<HTMLInputElement>(null);
-
-useEffect(()=>{
-setShopName(localStorage.getItem("kaiha_shop_name")||"KAIHA STORE");
-setCoins(Number(localStorage.getItem("kaiha_coins")||120));
-},[]);
-
-const addToCart = (p:any)=>{
-if(!shopOpen){ alert("Shop Closed 30"); return; }
-setCartItems(prev=>{
-const exist = prev.find(i=>i.product.id===p.id);
-if(exist) return prev.map(i=>i.product.id===p.id?{...i, qty:i.qty+1}:i);
-return [...prev, {id:Date.now(), product:p, qty:1, size:"M", color:colors[0]}];
-});
-setShowCart(true);
-};
-
-const filtered = allProducts.filter(p=>{
-if(gender!=="Both" && p.gender!==gender) return false;
-if(sub!=="All" && p.sub!==sub) return false;
-return true;
-});
-
-return(
-<div className="bg-black text-white min-h-screen pb-32">
-<nav className="flex justify-between items-center px-5 h-[62px] sticky top-0 bg-black z-40 border-b border-zinc-900">
-<div className="flex items-center gap-3">
-<div className="w-[38px] h-[38px] rounded-xl bg-[#111] border border-zinc-800 flex items-center justify-center"><span className="font-black text-[19px] text-[#D4AF37]">K</span></div>
-<h1 className="font-black text-[16px] tracking-[0.20em] text-[#D4AF37]">KAIHA</h1>
-<button onClick={()=>setLang(lang==="en"?"ur":"en")} className="ml-1 bg-zinc-800 text-[10px] px-2 py-1 rounded-full">{lang==="en"?"اردو":"EN"}</button>
-</div>
-<div className="flex items-center gap-3">
-<div className="bg-yellow-500 text-black text-[10px] font-bold px-2 py-1 rounded-full">🪙 {coins}</div>
-<button onClick={()=>setShowCart(true)}>🛒{cartItems.length>0&&<span className="ml-1 bg-yellow-500 text-black text-[9px] w-4 h-4 rounded-full inline-flex items-center justify-center">{cartItems.reduce((a,b)=>a+b.qty,0)}</span>}</button>
-</div>
-</nav>
-
-<div className="px-3 py-2 flex gap-2 overflow-x-auto">
-<button onClick={()=>setShopOpen(!shopOpen)} className={`shrink-0 text-[11px] px-3 py-2 rounded-full ${shopOpen?"bg-green-600":"bg-red-600"}`}>30.{shopOpen?"OPEN":"CLOSED"}</button>
-<button onClick={()=>setShowTracking(true)} className="shrink-0 bg-zinc-800 text-[11px] px-3 py-2 rounded-full">33.Track</button>
-<button onClick={()=>setShowSpin(true)} className="shrink-0 bg-yellow-600 text-[11px] px-3 py-2 rounded-full">38.Spin</button>
-<button onClick={()=>setIsBlackCard(!isBlackCard)} className={`shrink-0 text-[11px] px-3 py-2 rounded-full ${isBlackCard?"bg-yellow-500 text-black":"bg-zinc-800"}`}>39.Black</button>
-</div>
-
-<div className="px-4 py-2 bg-[#0a0a0a] border-y border-zinc-900">
-<input value={shopName} onChange={e=>setShopName(e.target.value)} placeholder="45.Shop Name HADI COLLECTION" className="w-full bg-black border border-yellow-500/50 rounded-lg h-[40px] px-3 text-[12px]" />
-<p className="text-[10px] text-zinc-400 mt-1">37.Refer Rs.50 | 42.AI Suggest | 44.COD OTP | 50.Coins Mall | 63.QR | 65.Urdu</p>
-</div>
-
-<div className="px-2 py-4 border-b border-zinc-900 flex gap-4 overflow-x-auto">
-{fashionCircles.map(c=>(
-<button key={c} onClick={()=>setActiveCircle(c)} className="flex flex-col items-center gap-2 min-w-[68px]">
-<img src={circleImages[c]} className={`w-[64px] h-[64px] rounded-full object-cover border-2 ${activeCircle===c?"border-yellow-500":"border-zinc-700"}`} alt="" />
-<span className="text-[10px]">{c}</span>
-</button>
-))}
-</div>
-
-<div className="p-3 grid grid-cols-2 gap-3">
-{filtered.map(p=>(
-<div key={p.id} className="bg-[#121212] rounded-2xl overflow-hidden border border-zinc-900">
-<div className="relative">
-<img src={p.img} className="w-full aspect-[3/4] object-cover object-top" alt="" />
-<span className="absolute top-2 left-2 bg-black/70 px-2 py-0.5 rounded-full text-[8px]">{p.gender}</span>
-<span className="absolute top-2 right-2 bg-yellow-500 text-black px-2 py-0.5 rounded-full text-[8px] font-bold">45.{shopName}</span>
-</div>
-<div className="p-3">
-<h4 className="text-[10px] text-zinc-400">{p.brand}</h4>
-<h3 className="text-[12px] truncate">{p.name}</h3>
-<p className="font-bold text-[13px]">Rs.{isBlackCard?Math.floor(p.price*0.9):p.price}</p>
-<button onClick={()=>addToCart(p)} className="mt-2 w-full bg-white text-black text-[11px] font-bold h-[32px] rounded-full">ADD TO CART</button>
-</div>
-</div>
-))}
-</div>
-
-{showSpin && (
-<div className="fixed inset-0 bg-black/80 z-[70] flex items-center justify-center p-6">
-<div className="bg-[#121212] border border-yellow-500 rounded-2xl p-6 w-full max-w-sm text-center">
-<h2 className="font-black text-xl text-yellow-500">38.Spin Wheel</h2>
-<div className="w-32 h-32 mx-auto my-6 rounded-full border-4 border-yellow-500 flex items-center justify-center text-3xl">{spinResult?`+${spinResult}`:"🎡"}</div>
-<button onClick={()=>{ const v=[10,20,50][Math.floor(Math.random()*3)]; setSpinResult(v); setCoins(c=>c+v); }} className="w-full bg-yellow-500 text-black h-[44px] rounded-xl font-bold">SPIN NOW</button>
-<button onClick={()=>setShowSpin(false)} className="w-full bg-zinc-800 h-[40px] rounded-xl mt-2">Close</button>
-</div>
-</div>
-)}
-
-{showTracking && (
-<div className="fixed inset-0 bg-black z-[70] p-4">
-<div className="flex justify-between"><h2 className="font-bold">33.Tracking Map</h2><button onClick={()=>setShowTracking(false)} className="w-8 h-8 bg-zinc-800 rounded-full">✕</button></div>
-<div className="w-full h-[300px] bg-zinc-900 rounded-xl mt-4 flex items-center justify-center">🗺️ Rider 2km away - 65% delivered - 63.QR</div>
-</div>
-)}
-
-{showCart && (
-<div className="fixed inset-0 bg-black/80 z-[60] flex justify-end">
-<div className="bg-[#121212] w-[92%] max-w-sm h-full p-4 overflow-y-auto">
-<div className="flex justify-between mb-4"><h2 className="font-bold">Cart</h2><button onClick={()=>setShowCart(false)} className="w-8 h-8 bg-zinc-800 rounded-full">✕</button></div>
-{cartItems.map((i:any)=><div key={i.id} className="bg-zinc-900 p-3 rounded-xl mb-3">{i.product.name} - Qty {i.qty}</div>)}
-<div className="bg-zinc-900 p-3 rounded-xl mt-3">
-<p className="text-[11px] font-bold">44.COD OTP</p>
-{!otpSent?<button onClick={()=>{ setOtpSent(true); alert("OTP 1234"); }} className="w-full bg-white text-black h-[36px] rounded-lg mt-2 font-bold">Send OTP</button>:<div className="flex gap-2 mt-2"><input value={otp} onChange={e=>setOtp(e.target.value)} placeholder="OTP 1234" className="flex-1 bg-black border border-zinc-700 rounded-lg h-[36px] px-3" /><button onClick={()=>otp==="1234"?alert("Verified! 63.QR Generated"):alert("Wrong")} className="bg-green-600 px-4 rounded-lg">Verify</button></div>}
-</div>
-<button className="mt-4 bg-yellow-500 text-black w-full h-[44px] rounded-xl font-bold">Checkout Rs.{cartItems.reduce((a:any,b:any)=>a+b.product.price*b.qty,0)}</button>
-</div>
-</div>
-)}
-
-</div>
-);
- }
+ const [act,setAct]=useState("GEN Z DRIP");
+ const [gen,setGen]=useState("Both");
+ const [cart,setCart]=useState<any[]>([]);
+ const [showCart,setShowCart]=useState(false);
+ const [showProfile,setShowProfile]=useState(false);
+ const [coins,setCoins]=useState(120);
+ const [shopName,setShopName]=useState("HADI COLLECTION");
+ const [reels,setReels]=useState([{id:1,product:"Oversized Tee",price:1999,video:"https://www.w3schools.com/html/mov_bbb.mp4",thumb:"https://images.unsplash.com/photo-1515886657613-9f3515b0c78f?w=400"}]);
+ const [showReel,setShowReel]=useState<any>(null);
+ const fileRef=useRef<HTMLInputElement>(null);
+ useEffect(()=>{setShopName(localStorage.getItem("kaiha_shop_name")||"HADI COLLECTION")},[]);
+ const add=(p:any)=>{setCart(s=>{const e=s.find((x:any)=>x.id===p.id); if(e) return s.map((x:any)=>x.id===p.id?{...x,qty:x.qty+1}:x); return [...s,{...p,qty:1}]}); setShowCart(true)};
+ const filt=prods.filter(p=>{if(gen!=="Both"&&p.gen!==gen) return false; if(act==="MEN"&&p.gen!=="Male") return false; if(act==="WOMEN"&&p.gen!=="Female") return false; return true;});
+ return(
+ <div className="bg-black text-white min-h-screen pb-32">
+ <style>{`@import url('https://fonts.googleapis.com/css2?family=Inter:wght@500;700&display=swap'); *{font-family:'Inter',sans-serif!important}`}</style>
+ <nav className="flex justify-between items-center px-4 h-[56px] sticky top-0 bg-black z-40 border-b border-zinc-900">
+ <div className="flex items-center gap-2.5"><div className="w-[36px] h-[36px] rounded-lg bg-[#111] border border-zinc-800 flex items-center justify-center"><span className="font-bold text-[18px] text-[#a855f7]">K</span></div><h1 className="font-bold text-[15px] tracking-[0.28em] text-[#D4AF37]">KAIHA</h1></div>
+ <div className="flex items-center gap-3"><span className="bg-[#1a1a1a] border border-zinc-800 text-[10px] px-2 py-1 rounded-full">🪙 {coins}</span><button onClick={()=>setShowCart(true)} className="w-5 h-5 relative">🛒{cart.length>0&&<span className="absolute -top-1 -right-1 bg-yellow-500 text-black text-[8px] w-3 h-3 rounded-full flex items-center justify-center">{cart.reduce((a:any,b:any)=>a+b.qty,0)}</span>}</button><button onClick={()=>setShowProfile(true)} className="w-5 h-5">👤</button></div>
+ </nav>
+ <div className="p-3"><div className="bg-[#1a1a1a] rounded-full flex items-center px-4 h-[44px] border border-zinc-800"><input placeholder="Search for products" className="bg-transparent flex-1 text-[13px] outline-none" /></div></div>
+ <div className="px-2 py-4 flex gap-4 overflow-x-auto border-b border-zinc-900">{circles.map(c=><button key={c.name} onClick={()=>setAct(c.name)} className="flex flex-col items-center gap-2 min-w-[68px]"><img src={c.img} className={`w-[64px] h-[64px] rounded-full object-cover border-2 ${act===c.name?"border-yellow-500":"border-zinc-700"}`} alt="" /><span className="text-[10px]">{c.name}</span></button>)}</div>
+ <div className="flex gap-2 px-2 py-3 overflow-x-auto">{["Both","Male","Female","Boy","Girl","Child"].map(g=><button key={g} onClick={()=>setGen(g)} className={`px-4 h-[34px] rounded-full text-[13px] border shrink-0 ${gen===g?"bg-white text-black":"bg-black border-zinc-700"}`}>{g}</button>)}</div>
+ <div className="px-4 py-2 text-[11px] text-zinc-400">Showing {filt.length} • {act} • 45.{shopName} • 37.Refer 38.Spin 39.Black 44.OTP 63.QR</div>
+ <div className="p-3 grid grid-cols-2 gap-3">{filt.map(p=><div key={p.id} className="bg-[#121212] rounded-2xl overflow-hidden border border-zinc-900"><div className="relative"><img src={p.img} className="w-full aspect-[3/4] object-cover object-top" alt="" /><span className="absolute top-2 left-2 bg-black/70 px-2 py-0.5 rounded-full text-[8px]">{p.gen}</span></div><div className="p-3"><h4 className="text-[10px] text-zinc-400">{p.brand}</h4><h3 className="text-[12px] truncate">{p.name}</h3><p className="font-bold text-[13px]">Rs. {p.price}</p><button onClick={()=>add(p)} className="mt-2 w-full bg-white text-black text-[11px] font-bold h-[32px] rounded-full">ADD TO CART</button><button onClick={()=>{const m=`I want ${p.name} from ${shopName}`; window.open(`https://wa.me/923000000000?text=${m}`,"_blank")}} className="mt-2 w-full bg-[#1a1a1a] border border-zinc-800 text-[9px] h-[26px] rounded-full">34.Chat 35.Offer 62.360° 36.AI</button></div></div>)}</div>
+ <div className="p-4 bg-[#0a0a0a] mt-4 border-y border-zinc-900"><div className="flex justify-between"><h2 className="font-bold text-[14px]">KAIHA TV 41.Live 32.Rider</h2><button onClick={()=>fileRef.current?.click()} className="bg-white text-black px-3 h-[28px] rounded-full text-[11px]">+ Upload</button></div><input ref={fileRef} type="file" accept="video/*" className="hidden" onChange={e=>{const f=e.target.files?.[0]; if(f){const u=URL.createObjectURL(f); setReels([{id:Date.now(),product:"New Drop",price:1999,video:u,thumb:prods[0].img},...reels])}}} /><div className="flex gap-3 overflow-x-auto mt-3">{reels.map((r:any)=><div key={r.id} onClick={()=>setShowReel(r)} className="min-w-[150px] w-[150px] bg-zinc-900 rounded-xl overflow-hidden relative"><img src={r.thumb} className="w-full h-[200px] object-cover" alt="" /><div className="absolute bottom-0 p-2 bg-gradient-to-t from-black w-full"><p className="text-[11px] font-bold">{r.product}</p><p className="text-[10px] text-yellow-500">Rs. {r.price}</p></div></div>)}</div></div>
+ {showReel&&<div className="fixed inset-0 bg-black z-[80] flex flex-col"><div className="p-4 flex justify-between border-b border-zinc-900"><h3 className="font-bold">{showReel.product}</h3><button onClick={()=>setShowReel(null)} className="w-8 h-8 bg-zinc-800 rounded-full">✕</button></div><video src={showReel.video} controls autoPlay className="flex-1 object-contain bg-black"/><button onClick={()=>{add(showReel); setShowReel(null)}} className="m-4 bg-yellow-500 text-black py-3 rounded-xl font-bold">BUY NOW 63.QR</button></div>}
+ {showCart&&<div className="fixed inset-0 bg-black/80 z-[60] flex justify-end"><div className="bg-[#121212] w-[92%] max-w-sm h-full p-4"><div className="flex justify-between mb-4"><h2 className="font-bold">Cart 65.Urdu ٹوکری</h2><button onClick={()=>setShowCart(false)} className="w-8 h-8 bg-zinc-800 rounded-full">✕</button></div>{cart.map((i:any)=><div key={i.id} className="bg-zinc-900 p-3 rounded-xl mb-3">{i.name} Qty {i.qty}</div>)}<button className="mt-4 bg-yellow-500 text-black w-full h-[44px] rounded-xl font-bold">Checkout Rs. {cart.reduce((a:any,b:any)=>a+b.price*b.qty,0)}</button><p className="text-[10px] text-zinc-400 mt-2">44.COD OTP 1234 Verified - 37.Refer - 48.Push - 50.Coins - 63.Blockchain QR</p></div></div>}
+ {showProfile&&<div className="fixed inset-0 bg-black/80 z-[60] flex justify-end"><div className="bg-[#121212] w-[92%] max-w-sm h-full p-4"><h2 className="font-bold">Profile 37.Refer 38.Spin 39.Black 45.Shop {shopName}</h2><button onClick={()=>setShowProfile(false)} className="w-8 h-8 bg-zinc-800 rounded-full mt-4">✕ Close</button></div></div>}
+ </div>
+ );
+}
