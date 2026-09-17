@@ -1,9 +1,8 @@
 "use client";
-
 import { useState, useEffect } from "react";
 import Image from "next/image";
 
-export function Navbar() {
+export default function Navbar() {
   const [showLogo, setShowLogo] = useState(true);
 
   useEffect(() => {
@@ -25,4 +24,4 @@ export function Navbar() {
       </div>
     </nav>
   );
-        }
+                                                                                                                                           }
