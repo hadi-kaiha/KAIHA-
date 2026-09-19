@@ -29,7 +29,7 @@ const sendOtp=async()=>{
   if(!shopName||!accNum||!gmail) return alert("3 boxes fill karo");
   setLoading(true);
   try{
-    const {error}=await supabase.auth.signInWithOtp({email:gmail,options:{data:{shop_name:shopName,shop_cat:shopCat}}});
+    const {error}=await supabase.auth.signInWithOtp({email:gmail,options:{data:{shop_name:shopName,acc:accNum}}});
     if(error)throw error; setLoading(false); setStep(2); alert("OTP to "+gmail);
   }catch(e:any){
     const localOtp=Math.floor(100000+Math.random()*900000).toString();
@@ -60,24 +60,55 @@ const verifyOtp=async()=>{
 const toggleShop=()=>{
   const upd={...shopCreated,isOpen:!shopCreated.isOpen};
   setShopCreated(upd); localStorage.setItem("kaiha_shop",JSON.stringify(upd));
-  // Update main products visibility
   const all=JSON.parse(localStorage.getItem("kaiha_all_products")||"[]");
   const updatedAll=all.map((p:any)=>p.shopName===upd.shopName?{...p,isOpen:upd.isOpen}:p);
   localStorage.setItem("kaiha_all_products",JSON.stringify(updatedAll));
 };
 
-const uploadProduct=()=>{
+// FIXED - Ab Supabase + LocalStorage dono me save hoga
+const uploadProduct=async()=>{
   if(!prod.name||!prod.price)return alert("Name Price required");
-  const newP={...prod, id:Date.now(), shopName:shopCreated.shopName, shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:prod.img||imgPreview||"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400", stock:Number(prod.stock), isOpen:shopCreated.isOpen, colors:prod.color.split(",").map((c:string)=>c.trim())};
-  const all=[newP,...myProds]; setMyProds(all); localStorage.setItem("kaiha_seller_products",JSON.stringify(all));
-  const mainP=JSON.parse(localStorage.getItem("kaiha_all_products")||"[]"); localStorage.setItem("kaiha_all_products",JSON.stringify([newP,...mainP]));
-  setProd({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:shopCreated.shopCat,sub:"MALE"}); setImgPreview(""); alert("Uploaded! "+shopCreated.shopCat+" category me show hoga!");
+  if(!shopCreated) return alert("Login first");
+  setLoading(true);
+  try{
+    // 1. Supabase me save - sab phones pe dikhega
+    const supaData={
+      name: prod.name,
+      price: Number(prod.price),
+      category: shopCreated.shopCat || prod.cat,
+      subcategory: prod.sub || "MALE",
+      image_url: prod.img || imgPreview || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400",
+      shop_name: shopCreated.shopName,
+      colors: prod.color,
+      sizes: prod.size,
+      stock: Number(prod.stock),
+      is_active: shopCreated.isOpen,
+      seller_gmail: shopCreated.gmail
+    };
+    const {data,error}=await supabase.from("products").insert(supaData).select();
+    if(error) throw error;
+
+    // 2. Local me bhi save - backup
+    const newP={...prod, id:data?.[0]?.id||Date.now(), shopName:shopCreated.shopName, shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:prod.img||imgPreview||"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400", stock:Number(prod.stock), isOpen:shopCreated.isOpen, colors:prod.color.split(",").map((c:string)=>c.trim())};
+    const all=[newP,...myProds]; setMyProds(all); localStorage.setItem("kaiha_seller_products",JSON.stringify(all));
+    const mainP=JSON.parse(localStorage.getItem("kaiha_all_products")||"[]"); localStorage.setItem("kaiha_all_products",JSON.stringify([newP,...mainP]));
+
+    setProd({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:shopCreated.shopCat,sub:"MALE"}); setImgPreview(""); setLoading(false);
+    alert("✅ Uploaded to Supabase! Ab har phone pe dikhega - "+shopCreated.shopCat);
+  }catch(e:any){
+    setLoading(false); alert("Supabase Error: "+e.message+" - Local me save kar raha hun");
+    const newP={...prod, id:Date.now(), shopName:shopCreated.shopName, shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:prod.img||imgPreview||"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400", stock:Number(prod.stock), isOpen:shopCreated.isOpen, colors:prod.color.split(",").map((c:string)=>c.trim())};
+    const all=[newP,...myProds]; setMyProds(all); localStorage.setItem("kaiha_seller_products",JSON.stringify(all));
+    const mainP=JSON.parse(localStorage.getItem("kaiha_all_products")||"[]"); localStorage.setItem("kaiha_all_products",JSON.stringify([newP,...mainP]));
+    setProd({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:shopCreated.shopCat,sub:"MALE"}); setImgPreview("");
+  }
 };
 
-const updateStock=(id:number,newStock:number)=>{
+const updateStock=async(id:number,newStock:number)=>{
   const upd=myProds.map(p=>p.id===id?{...p,stock:newStock}:p); setMyProds(upd);
   localStorage.setItem("kaiha_seller_products",JSON.stringify(upd));
   const all=JSON.parse(localStorage.getItem("kaiha_all_products")||"[]"); localStorage.setItem("kaiha_all_products",JSON.stringify(all.map((p:any)=>p.id===id?{...p,stock:newStock}:p)));
+  try{ await supabase.from("products").update({stock:newStock, is_active:newStock>0}).eq("id",id); }catch(e){console.log(e)}
 };
 
 if(showLogin){
@@ -101,9 +132,8 @@ return(
 </>}
 </div></div></div>
 );
-}
-
-return(
+      }
+  return(
 <div style={{background:"#000",display:"flex",justifyContent:"center",minHeight:"100vh"}}><div style={{background:"#0a0a0a",width:"100%",maxWidth:"390px",minHeight:"100vh",paddingBottom:"20px",color:"#fff",borderRadius:"28px",overflow:"hidden"}}>
 <div style={{display:"flex",alignItems:"center",gap:"12px",padding:"10px 18px",borderBottom:"1px solid #D4B78F33"}}><img src={LOGO} style={{height:"72px",width:"72px",borderRadius:"16px"}}/><span style={{color:"#D4B78F",letterSpacing:"0.38em",fontSize:"19px"}}>KAIHA SELLER</span></div>
 <div style={{padding:"18px"}}>
@@ -111,37 +141,31 @@ return(
 <div><div style={{color:"#D4B78F",fontWeight:"800",fontSize:"16px"}}>{shopCreated.shopName}</div><div style={{fontSize:"10px",color:"#888"}}>{shopCreated.gmail} | {shopCreated.shopCat} SHOP</div><div style={{fontSize:"10px",color:"#D4B78F"}}>Acc: {shopCreated.accNum} ✓</div></div>
 <button onClick={toggleShop} style={{background:shopCreated.isOpen?"#D4B78F":"#333",color:shopCreated.isOpen?"#000":"#fff",border:"none",borderRadius:"999px",padding:"8px 14px",fontSize:"10px",fontWeight:"800"}}>{shopCreated.isOpen?"SHOP OPEN":"SHOP CLOSED"}</button>
 </div>
-
 <div style={{color:"#888",fontSize:"9px",marginTop:"8px",textAlign:"center"}}>{shopCreated.isOpen?"✓ Your shop is LIVE on kaiha.vercel.app - Customers can see":"✕ Shop CLOSED - Hidden from customers"}</div>
-
 <div style={{color:"#D4B78F",fontWeight:"700",marginTop:"18px"}}>Upload Product - {shopCreated.shopCat} Section Only</div>
 <input value={prod.name} onChange={e=>setProd({...prod,name:e.target.value})} placeholder="Product Name" style={{width:"100%",background:"#141414",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff",marginTop:"10px"}}/>
 <div style={{display:"flex",gap:"8px",marginTop:"8px"}}>
-<input value={prod.price} onChange={e=>setProd({...prod,price:e.target.value})} placeholder="Price $" type="number" style={{flex:1,background:"#141414",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff"}}/>
+<input value={prod.price} onChange={e=>setProd({...prod,price:e.target.value})} placeholder="Price Rs." type="number" style={{flex:1,background:"#141414",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff"}}/>
 <input value={prod.stock} onChange={e=>setProd({...prod,stock:e.target.value})} placeholder="Stock Qty" type="number" style={{flex:1,background:"#141414",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff"}}/>
 </div>
 <div style={{display:"flex",gap:"8px",marginTop:"8px"}}>
 <input value={prod.size} onChange={e=>setProd({...prod,size:e.target.value})} placeholder="Size M/L/XL" style={{flex:1,background:"#141414",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff"}}/>
 <input value={prod.color} onChange={e=>setProd({...prod,color:e.target.value})} placeholder="Colors - Black,White,Red" style={{flex:2,background:"#141414",border:"1px solid #D4B78F44",borderRadius:"8px",padding:"10px",color:"#fff"}}/>
 </div>
-
-{/* GALLERY SELECT */}
 <div style={{marginTop:"10px",background:"#141414",border:"1px solid #D4B78F55",borderRadius:"10px",padding:"12px"}}>
 <div style={{fontSize:"10px",color:"#D4B78F",marginBottom:"8px"}}>📷 Product Image - Gallery se select karo</div>
 <input type="file" accept="image/*" onChange={handleGallery} style={{width:"100%",color:"#fff",fontSize:"11px"}}/>
 {imgPreview&&<img src={imgPreview} style={{width:"100%",height:"120px",objectFit:"cover",borderRadius:"8px",marginTop:"8px"}}/>}
 </div>
-
-<button onClick={uploadProduct} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"12px",borderRadius:"999px",fontWeight:"800"}}>UPLOAD TO {shopCreated.shopCat} MAIN SITE</button>
-
+<button onClick={uploadProduct} disabled={loading} style={{width:"100%",marginTop:"12px",background:"#D4B78F",color:"#000",border:"none",padding:"12px",borderRadius:"999px",fontWeight:"800"}}>{loading?"UPLOADING TO SUPABASE...":`UPLOAD TO ${shopCreated.shopCat} MAIN SITE`}</button>
 <div style={{marginTop:"18px"}}><b style={{color:"#D4B78F"}}>My Shop Products ({myProds.length}) - {shopCreated.shopCat}</b>
 {myProds.map((p:any)=><div key={p.id} style={{background:"#141414",border:`1px solid ${p.stock>0?"#222":"#ff444466"}`,borderRadius:"10px",padding:"10px",marginTop:"8px"}}>
 <div style={{display:"flex",gap:"10px"}}>
 <img src={p.im} style={{width:"60px",height:"60px",borderRadius:"8px",objectFit:"cover"}}/>
 <div style={{flex:1}}>
 <div style={{fontSize:"12px",fontWeight:"600"}}>{p.n} - {p.shopName}</div>
-<div style={{fontSize:"10px",color:"#D4B78F"}}>Rs. {(p.pr*280).toLocaleString()} | {p.size} | {p.colors?.join(", ")}</div>
-<div style={{fontSize:"10px",color:p.stock>0?"#4CAF50":"#ff4444",marginTop:"2px"}}>{p.stock>0?`${p.stock} in Stock - Available`:`OUT OF STOCK - Hidden from customers`}</div>
+<div style={{fontSize:"10px",color:"#D4B78F"}}>Rs. {Number(p.pr).toLocaleString()} | {p.size} | {p.colors?.join(", ")}</div>
+<div style={{fontSize:"10px",color:p.stock>0?"#4CAF50":"#ff4444",marginTop:"2px"}}>{p.stock>0?`${p.stock} in Stock - Available`:`OUT OF STOCK - Hidden`}</div>
 <div style={{display:"flex",gap:"6px",marginTop:"6px"}}>
 <button onClick={()=>updateStock(p.id,Math.max(0,p.stock-1))} style={{background:"#222",border:"1px solid #333",color:"#fff",borderRadius:"6px",padding:"4px 8px",fontSize:"10px"}}>-1</button>
 <span style={{fontSize:"11px",padding:"4px"}}>Stock: {p.stock}</span>
@@ -151,11 +175,9 @@ return(
 </div>
 </div>)}
 </div>
-
 <div style={{marginTop:"12px",background:"#0a0a0a",border:"1px dashed #D4B78F33",borderRadius:"10px",padding:"10px"}}>
-<div style={{fontSize:"9px",color:"#888",textAlign:"center"}}>Items uploaded here will show ONLY in {shopCreated.shopCat} category on https://kaiha.vercel.app<br/>Customer: {shopCreated.isOpen?"Can see shop":"Cannot see - Shop Closed"}</div>
+<div style={{fontSize:"9px",color:"#888",textAlign:"center"}}>Items uploaded here will show ONLY in {shopCreated.shopCat} category on https://kaiha.vercel.app<br/>Now saves to Supabase → Har phone pe dikhega!</div>
 </div>
-
 </div></div></div>
 );
-      }
+                                                                                                                                                                                                                }
