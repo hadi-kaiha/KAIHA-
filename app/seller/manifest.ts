@@ -1,11 +1,11 @@
 import { MetadataRoute } from 'next'
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'KAIHA Admin',
-    short_name: 'KAIHA Admin',
-    id: '/kaiha-admin-786',
-    start_url: '/kaiha-admin-786?source=pwa',
-    scope: '/kaiha-admin-786',
+    name: 'KAIHA Seller',
+    short_name: 'KAIHA Seller',
+    id: '/seller',
+    start_url: '/seller?source=pwa',
+    scope: '/seller',
     display: 'standalone',
     background_color: '#ffffff',
     theme_color: '#000000',
