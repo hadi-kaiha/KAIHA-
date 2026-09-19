@@ -1,11 +1,8 @@
 "use client";
 import {useState,useEffect} from "react";
 import { createClient } from "@supabase/supabase-js";
-
-const supabase = createClient("https://rlsmcomxugstuoerdam.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsc21jb214dWdzdHVvZXVyZGFtIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODkzNzc0NzYsImV4cCI6MjEwNDk1MzQ3Nn0.ULyXgr3vMPSZnxRa7qzHf3mmuVqax7u3jfyiGfQB7Nk");
-
+const supabase = createClient("https://rlsmcomxugstuoeurdam.supabase.co","sb_publishable_mxCJKSppCAnMe6SwT7tbiQ_4dlOy122");
 const LOGO="/k-logo.png";
-
 export default function Seller(){
 const [showLogin,setShowLogin]=useState(true);
 const [shopName,setShopName]=useState(""); const [accNum,setAccNum]=useState(""); const [gmail,setGmail]=useState(""); const [shopCat,setShopCat]=useState("FASHION");
@@ -14,49 +11,41 @@ const [shopCreated,setShopCreated]=useState<any>(null);
 const [myProds,setMyProds]=useState<any[]>([]);
 const [prod,setProd]=useState({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:"FASHION",sub:"MALE"});
 const [imgPreview,setImgPreview]=useState("");
-
 useEffect(()=>{
   const sh=localStorage.getItem("kaiha_shop"); if(sh){setShopCreated(JSON.parse(sh)); setShowLogin(false);}
   const pr=localStorage.getItem("kaiha_seller_products"); if(pr)setMyProds(JSON.parse(pr));
 },[]);
-
 const handleGallery=(e:any)=>{
   const file=e.target.files[0]; if(!file) return;
-  if(file.size > 500*1024){ alert("500KB se choti image lo bhai!"); return; }
+  if(file.size > 500*1024){ alert("500KB se choti image lo!"); return; }
   const reader=new FileReader();
   reader.onload=()=>{ setImgPreview(reader.result as string); };
   reader.readAsDataURL(file);
 };
-
 const sendOtp=async()=>{
   if(!shopName||!accNum||!gmail) return alert("3 boxes fill karo");
   setLoading(true);
   const localOtp=Math.floor(100000+Math.random()*900000).toString();
   localStorage.setItem("kaiha_seller_otp",localOtp);
-  setLoading(false); setStep(2); alert("OTP Local: "+localOtp+" or 123456");
+  setLoading(false); setStep(2); alert("OTP: "+localOtp+" or 123456");
 };
-
 const verifyOtp=async()=>{
   const localOtp=localStorage.getItem("kaiha_seller_otp");
   if((localOtp&&otp===localOtp)||otp==="123456"){
     const newShop={shopName: "KAIHA", accNum, gmail, shopCat, isOpen:true, id:Date.now()};
     localStorage.setItem("kaiha_shop",JSON.stringify(newShop)); setShopCreated(newShop); setShowLogin(false); return;
-  }else alert("Wrong OTP! Use "+(localOtp||"123456"));
+  }else alert("Wrong OTP!");
 };
-
 const toggleShop=()=>{
   const upd={...shopCreated,isOpen:!shopCreated.isOpen};
   setShopCreated(upd); localStorage.setItem("kaiha_shop",JSON.stringify(upd));
 };
-
-// DIRECT SUPABASE - NO API - 100% FIX
 const uploadProduct=async()=>{
   if(!prod.name||!prod.price) return alert("Name Price required");
   setLoading(true);
   try{
     let finalImg = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400";
-    if(imgPreview && imgPreview.length < 50000) finalImg = imgPreview;
-
+    if(imgPreview) finalImg = imgPreview;
     const { data, error } = await supabase.from("products").insert([{
       name: prod.name,
       price: Number(prod.price),
@@ -66,21 +55,15 @@ const uploadProduct=async()=>{
       stock: Number(prod.stock) || 10,
       is_active: true
     }]).select();
-
     if(error) throw new Error(error.message);
-
     const newP={id:data[0].id, shopName:"KAIHA", shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:finalImg, stock:Number(prod.stock), isOpen:true};
     const all=[newP,...myProds]; setMyProds(all); localStorage.setItem("kaiha_seller_products",JSON.stringify(all));
     setProd({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:shopCreated.shopCat,sub:"MALE"}); setImgPreview("");
-    alert("✅ SUCCESS ID: "+data[0].id+" - Customer ko ab dikhega!");
-
+    alert("✅ SUCCESS ID: "+data[0].id);
   }catch(e:any){
     alert("❌ Error: "+e.message);
-  }finally{
-    setLoading(false);
-  }
+  }finally{ setLoading(false); }
 };
-
 if(showLogin){
 return(
 <div style={{background:"#000",display:"flex",justifyContent:"center",minHeight:"100vh"}}><div style={{background:"#0a0a0a",width:"100%",maxWidth:"390px",minHeight:"100vh",display:"flex",alignItems:"center",justifyContent:"center",padding:"16px",color:"#fff"}}>
