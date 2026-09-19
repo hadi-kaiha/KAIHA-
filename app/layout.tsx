@@ -13,9 +13,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "KAIHA - Pakistan's First Shopping Brand",
-  description: "Pakistan's first shopping brand with 30+ features. Built from Sukkur.",
+  title: "KAIHA - Pakistan First Shopping Brand",
+  description: "KAIHA is Pakistans first 30+ feature shopping brand from Sukkur. Fall Collection 2026.",
+  applicationName: "KAIHA",
   manifest: "/manifest.json",
+  icons: {
+    icon: "/k-logo.png",
+    shortcut: "/k-logo.png",
+    apple: "/k-logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -25,9 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
         {children}
       </body>
     </html>
