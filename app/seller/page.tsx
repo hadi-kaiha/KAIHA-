@@ -12,6 +12,7 @@ const [shopCreated,setShopCreated]=useState<any>(null);
 const [myProds,setMyProds]=useState<any[]>([]);
 const [prod,setProd]=useState({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:"FASHION",sub:"MALE"});
 const [imgPreview,setImgPreview]=useState("");
+const [imgFile,setImgFile]=useState<File|null>(null);
 
 useEffect(()=>{
   const sh=localStorage.getItem("kaiha_shop"); if(sh){setShopCreated(JSON.parse(sh)); setShowLogin(false);}
@@ -20,8 +21,9 @@ useEffect(()=>{
 
 const handleGallery=(e:any)=>{
   const file=e.target.files[0]; if(!file)return;
+  setImgFile(file);
   const reader=new FileReader();
-  reader.onload=()=>{ setImgPreview(reader.result as string); setProd({...prod,img:reader.result as string}); };
+  reader.onload=()=>{ setImgPreview(reader.result as string); };
   reader.readAsDataURL(file);
 };
 
@@ -46,17 +48,31 @@ const toggleShop=()=>{
   setShopCreated(upd); localStorage.setItem("kaiha_shop",JSON.stringify(upd));
 };
 
+// FIXED uploadProduct - Gallery Storage pe jayegi
 const uploadProduct=async()=>{
   if(!prod.name||!prod.price)return alert("Name Price required");
   if(!shopCreated) return alert("Login first");
   setLoading(true);
   try{
+    let finalImg = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400";
+
+    // Agar file selected hai to Storage pe upload karo - ye fix hai!
+    if(imgFile){
+      const fileName = `${Date.now()}_${shopCreated.shopName.replace(/\s/g,'')}.jpg`;
+      const { error: upErr } = await supabase.storage.from('product-images').upload(fileName, imgFile, { upsert: true });
+      if(upErr) throw upErr;
+      const { data } = supabase.storage.from('product-images').getPublicUrl(fileName);
+      finalImg = data.publicUrl;
+    } else if(imgPreview){
+      finalImg = imgPreview;
+    }
+
     const supaData={
       name: prod.name,
       price: Number(prod.price),
       category: shopCreated.shopCat || prod.cat,
       subcategory: prod.sub || "MALE",
-      image_url: prod.img || imgPreview || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400",
+      image_url: finalImg,
       shop_name: shopCreated.shopName,
       colors: prod.color,
       sizes: prod.size,
@@ -65,12 +81,13 @@ const uploadProduct=async()=>{
     };
     const {data,error}=await supabase.from("products").insert(supaData).select();
     if(error) throw error;
-        const newP={...prod, id:data?.[0]?.id||Date.now(), shopName:shopCreated.shopName, shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:prod.img||imgPreview||"https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400", stock:Number(prod.stock), isOpen:true, colors:prod.color.split(",")};
+
+    const newP={id:data?.[0]?.id||Date.now(), shopName:shopCreated.shopName, shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:finalImg, stock:Number(prod.stock), isOpen:true};
     const all=[newP,...myProds]; setMyProds(all); localStorage.setItem("kaiha_seller_products",JSON.stringify(all));
-    setProd({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:shopCreated.shopCat,sub:"MALE"}); setImgPreview(""); setLoading(false);
-    alert("✅ SUPABASE ME GAYA! ID: "+data[0].id+" - Ab doosre phone pe dekho!");
+    setProd({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:shopCreated.shopCat,sub:"MALE"}); setImgPreview(""); setImgFile(null); setLoading(false);
+    alert("✅ SUCCESS ID: "+data[0].id+" - Customer ko ab dikhega!");
   }catch(e:any){
-    setLoading(false); alert("❌ Error: "+e.message);
+    setLoading(false); alert("❌ Error: "+e.message+"\n\nStorage bucket public hai kya check karo!");
   }
 };
 
@@ -113,7 +130,7 @@ return(
 <input value={prod.stock} onChange={e=>setProd({...prod,stock:e.target.value})} placeholder="Stock" type="number" style={{flex:1,background:"#141414",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff"}}/>
 </div>
 <div style={{marginTop:"10px",background:"#141414",border:"1px solid #D4B78F55",borderRadius:"10px",padding:"12px"}}>
-<div style={{fontSize:"10px",color:"#D4B78F"}}>📷 Gallery</div>
+<div style={{fontSize:"10px",color:"#D4B78F"}}>📷 Gallery (Ab chalegi)</div>
 <input type="file" accept="image/*" onChange={handleGallery} style={{width:"100%",color:"#fff",fontSize:"11px",marginTop:"6px"}}/>
 {imgPreview&&<img src={imgPreview} style={{width:"100%",height:"120px",objectFit:"cover",borderRadius:"8px",marginTop:"8px"}}/>}
 </div>
@@ -126,4 +143,4 @@ return(
 </div>
 </div></div></div>
 );
-     }
+}
