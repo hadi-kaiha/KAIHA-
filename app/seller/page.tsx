@@ -39,7 +39,7 @@ const sendOtp=async()=>{
 const verifyOtp=async()=>{
   const localOtp=localStorage.getItem("kaiha_seller_otp");
   if((localOtp&&otp===localOtp)||otp==="123456"){
-    const newShop={shopName, accNum, gmail, shopCat, isOpen:true, id:Date.now()};
+    const newShop={shopName: "KAIHA", accNum, gmail, shopCat, isOpen:true, id:Date.now()};
     localStorage.setItem("kaiha_shop",JSON.stringify(newShop)); setShopCreated(newShop); setShowLogin(false); return;
   }else alert("Wrong OTP! Use "+(localOtp||"123456"));
 };
@@ -49,37 +49,33 @@ const toggleShop=()=>{
   setShopCreated(upd); localStorage.setItem("kaiha_shop",JSON.stringify(upd));
 };
 
-// PERFECT FIX - Vercel API se jayega - Failed to fetch khatam
+// DIRECT SUPABASE - NO API - 100% FIX
 const uploadProduct=async()=>{
   if(!prod.name||!prod.price) return alert("Name Price required");
   setLoading(true);
   try{
     let finalImg = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400";
-    if(imgPreview && imgPreview.length < 200000) finalImg = imgPreview;
+    if(imgPreview && imgPreview.length < 50000) finalImg = imgPreview;
 
-    const res = await fetch("/api/products",{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
-      body: JSON.stringify({
-        name: prod.name,
-        price: prod.price,
-        category: shopCreated.shopCat,
-        image_url: finalImg,
-        shop_name: shopCreated.shopName,
-        stock: prod.stock
-      })
-    });
+    const { data, error } = await supabase.from("products").insert([{
+      name: prod.name,
+      price: Number(prod.price),
+      category: shopCreated.shopCat,
+      image_url: finalImg,
+      shop_name: "KAIHA",
+      stock: Number(prod.stock) || 10,
+      is_active: true
+    }]).select();
 
-    const json = await res.json();
-    if(!res.ok) throw new Error(json.error || "API Error");
+    if(error) throw new Error(error.message);
 
-    const newP={id:json.data[0].id, shopName:shopCreated.shopName, shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:finalImg, stock:Number(prod.stock), isOpen:true};
+    const newP={id:data[0].id, shopName:"KAIHA", shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:finalImg, stock:Number(prod.stock), isOpen:true};
     const all=[newP,...myProds]; setMyProds(all); localStorage.setItem("kaiha_seller_products",JSON.stringify(all));
     setProd({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:shopCreated.shopCat,sub:"MALE"}); setImgPreview("");
-    alert("✅ SUCCESS ID: "+json.data[0].id+" - Customer ko ab dikhega!");
+    alert("✅ SUCCESS ID: "+data[0].id+" - Customer ko ab dikhega!");
 
   }catch(e:any){
-    alert("❌ Error: "+e.message+"\n\n/api/products file banaya hai kya?");
+    alert("❌ Error: "+e.message);
   }finally{
     setLoading(false);
   }
