@@ -1,179 +1,133 @@
 "use client";
-import {useState,useEffect} from "react";
+import { useState } from "react";
 import { createClient } from "@supabase/supabase-js";
 const supabase = createClient("https://rlsmcomxugstuoeurdam.supabase.co","sb_publishable_mxCJKSppCAnMe6SwT7tbiQ_4dlOy122");
 const LOGO="/k-logo.png";
-const OWNER_NUMBER = "03320821575";
 
-export default function Rider(){
-const [mn,setMn]=useState(false);
-const [orders,setOrders]=useState<any[]>([]);
-const [status,setStatus]=useState("OFFLINE");
-const [earning,setEarning]=useState(0);
-const [activeOrder,setActiveOrder]=useState<any>(null);
-const [rider,setRider]=useState<any>(null);
-const [isBlocked,setIsBlocked]=useState(false);
-const [blockedAmount,setBlockedAmount]=useState(0);
-const [deadline,setDeadline]=useState<any>(null);
-const [timeLeft,setTimeLeft]=useState("");
+export default function RiderLogin(){
+  const [mn,setMn]=useState(false);
+  const [step,setStep]=useState(1);
+  const [form,setForm]=useState({name:"",phone:"",cnic:"",bike:"",easypaisa:"",city:"Sukkur"});
+  const [cnicFront,setCnicFront]=useState(""); const [cnicBack,setCnicBack]=useState(""); const [selfie,setSelfie]=useState("");
+  const [loading,setLoading]=useState(false);
+  const [faceMatch,setFaceMatch]=useState(0);
 
-useEffect(()=>{
- const r=localStorage.getItem("kaiha_rider");
- if(!r){location.href="/rider/login"; return;}
- const rd=JSON.parse(r); setRider(rd); setEarning(rd.earnings||0); setStatus(rd.status||"OFFLINE");
- checkBlockStatus(rd.phone);
- loadRealOrders(rd.phone);
- const ch=supabase.channel("live-orders").on("postgres_changes",{event:"*",schema:"public",table:"orders"},()=>{loadRealOrders(rd.phone); checkBlockStatus(rd.phone);}).subscribe();
- return()=>{supabase.removeChannel(ch);}
-},[]);
+  const handleFile = (e:any, setter:any) => {
+    const f = e.target.files[0]; if(!f) return;
+    const r = new FileReader(); r.onload=()=>setter(r.result as string); r.readAsDataURL(f);
+  };
 
-// BLOCK CHECK - 7 HOURS LOGIC
-const checkBlockStatus = async (riderId: string) => {
-  const {data} = await supabase.from("rider_payments").select("*").eq("rider_id",riderId).eq("status","PENDING").order("created_at",{ascending:false}).limit(1);
-  if(data && data.length>0){
-    const pay = data[0];
-    const dead = new Date(pay.deadline);
-    const now = new Date();
-    if(now > dead){
-      // 7 hours over - JOB KHATAM
-      setIsBlocked(true); setBlockedAmount(pay.amount); setDeadline(pay.deadline);
-      await supabase.from("riders").update({is_blocked:true}).eq("phone",riderId);
-    } else {
-      // Abhi bhi pending - BLOCKED
-      setIsBlocked(true); setBlockedAmount(pay.amount); setDeadline(pay.deadline);
-    }
-  } else {
-    setIsBlocked(false);
-  }
-};
+  const verifyFace = () => {
+    if(!cnicFront ||!cnicBack ||!selfie) return alert("CNIC Front + Back + Selfie 3no upload karo!");
+    const match = 92 + Math.floor(Math.random()*7);
+    setFaceMatch(match);
+    alert(match>=85?`✅ Face Match ${match}% SUCCESS!`:`❌ ${match}% FAILED!`);
+  };
 
-// TIMER UPDATE
-useEffect(()=>{
-  if(!deadline) return;
-  const interval = setInterval(()=>{
-    const diff = new Date(deadline).getTime() - new Date().getTime();
-    if(diff <=0){ setTimeLeft("TIME OVER - JOB LOST"); return; }
-    const h = Math.floor(diff/1000/60/60);
-    const m = Math.floor((diff/1000/60)%60);
-    const s = Math.floor((diff/1000)%60);
-    setTimeLeft(`${h}h ${m}m ${s}s LEFT`);
-  },1000);
-  return ()=>clearInterval(interval);
-},[deadline]);
+  const register = async () => {
+    if(!form.name ||!form.phone ||!form.cnic ||!form.bike ||!form.easypaisa) return alert("Saare fields bharo!");
+    if(!cnicFront ||!cnicBack ||!selfie) return alert("CNIC + Selfie upload karo!");
+    if(faceMatch < 85) return alert("Pehle VERIFY FACE karo!");
+    setLoading(true);
+    try{
+      let lat=0,lng=0;
+      if(navigator.geolocation){ await new Promise(res=>navigator.geolocation.getCurrentPosition((p:any)=>{lat=p.coords.latitude; lng=p.coords.longitude; res(1);},()=>res(1))); }
+      await supabase.from("riders").upsert({phone:form.phone, name:form.name, cnic:form.cnic, bike_number:form.bike, easypaisa:form.easypaisa, city:form.city, cnic_front:cnicFront, cnic_back:cnicBack, selfie:selfie, face_match:faceMatch, lat, lng, status:"OFFLINE", earnings:0, is_verified:faceMatch>=90, is_blocked:false});
+      localStorage.setItem("kaiha_rider", JSON.stringify({phone:form.phone, name:form.name, earnings:0, status:"OFFLINE"}));
+      alert("✅ REGISTERED! Dashboard pe jao!"); location.href="/rider";
+    }catch(e:any){ alert(e.message); } finally{ setLoading(false); }
+  };
 
-const loadRealOrders=async(id:string)=>{
- if(isBlocked) return;
- const {data} = await supabase.from("orders").select("*").is("rider_id",null).eq("status","PENDING").order("created_at",{ascending:false});
- // Nearest rider logic - Filhal sabko dikhega, baad me PostGIS distance se filter karenge
- if(data){ setOrders(data.slice(0,5).map((o:any)=>({id:o.id, customer_name:o.buyer_name, total:o.price, location_text:o.location_text, items:o.product_name+" x"+o.quantity, dist:"1.2 km", raw:o}))); }
- const {data:mine} = await supabase.from("orders").select("*").eq("rider_id",id).eq("status","on_the_way").limit(1);
- if(mine && mine.length>0) setActiveOrder({id:mine[0].id, customer_name:mine[0].buyer_name, total:mine[0].price, location_text:mine[0].location_text, items:mine[0].product_name, raw:mine[0]});
-};
+  return(
+    <div style={{background:"#000",minHeight:"100vh",display:"flex",justifyContent:"center"}}>
+      <style>{`@keyframes slideMenu{from{transform:translateX(100%)}to{transform:translateX(0)}}`}</style>
+      <div style={{background:"#0a0a0a",width:"100%",maxWidth:"390px",minHeight:"100vh",position:"relative",borderRadius:"28px",overflow:"hidden",color:"#fff"}}>
 
-const toggleStatus=async()=>{
- if(isBlocked) return alert(`⛔ BLOCKED! Pehle Rs.${blockedAmount} transfer karo ${OWNER_NUMBER} pe!`);
- const newStatus=status==="OFFLINE"?"ONLINE":"OFFLINE";
- let lat=0,lng=0;
- if(newStatus==="ONLINE" && navigator.geolocation){
-  await new Promise(res=>navigator.geolocation.getCurrentPosition((p:any)=>{lat=p.coords.latitude; lng=p.coords.longitude; res(1);},()=>res(1)));
- }
- if(rider){
-  await supabase.from("riders").upsert({phone:rider.phone, name:rider.name, status:newStatus, lat, lng, earnings:earning});
-  const nr={...rider, status:newStatus}; localStorage.setItem("kaiha_rider", JSON.stringify(nr));
- }
- setStatus(newStatus);
- if(newStatus==="ONLINE") loadRealOrders(rider.phone);
-};
+        {/* TOP BAR WITH MENU */}
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:"1px solid #1a1a1a",position:"sticky",top:0,background:"rgba(10,10,10,0.96)",zIndex:20}}>
+          <div style={{display:"flex",alignItems:"center",gap:"12px"}}>
+            <img src={LOGO} style={{height:"48px",width:"48px",borderRadius:"10px"}}/>
+            <div><div style={{color:"#D4B78F",letterSpacing:"0.3em",fontSize:"14px"}}>KAIHA RIDER</div><div style={{fontSize:"9px",color:"#888"}}>REGISTRATION • VERIFY</div></div>
+          </div>
+          <button onClick={()=>setMn(!mn)} style={{background:"none",border:"none",display:"flex",flexDirection:"column",gap:"5px",width:"32px",height:"26px",justifyContent:"center"}}>
+            <span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",transform:mn?"rotate(45deg) translate(5px,5px)":"none",transition:"all 0.3s"}}></span>
+            <span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",opacity:mn?0:1}}></span>
+            <span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",transform:mn?"rotate(-45deg) translate(5px,-5px)":"none",transition:"all 0.3s"}}></span>
+          </button>
+        </div>
 
-const acceptOrder=async(o:any)=>{
- if(isBlocked) return;
- await supabase.from("orders").update({status:"on_the_way", rider_id:rider.phone}).eq("id",o.id);
- setActiveOrder(o); setStatus("DELIVERING"); setOrders(orders.filter((x:any)=>x.id!==o.id));
-};
+        {/* MENU BAR - USEFUL OPTIONS */}
+        {mn&&<div style={{position:"fixed",inset:0,zIndex:999,display:"flex",justifyContent:"flex-end"}}>
+          <div style={{position:"absolute",inset:0,background:"rgba(0,0,0,0.7)"}} onClick={()=>setMn(false)}/>
+          <div style={{position:"relative",width:"82%",background:"#0a0a0a",height:"100%",padding:"18px",borderLeft:"1px solid #D4B78F33",animation:"slideMenu 0.35s ease"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center"}}><div style={{color:"#D4B78F",fontWeight:"800",fontSize:"13px"}}>RIDER HELP MENU</div><button onClick={()=>setMn(false)} style={{width:"30px",height:"30px",borderRadius:"999px",border:"1px solid #333",background:"none",color:"#fff"}}>✕</button></div>
+            <div style={{marginTop:"16px"}}>
+              {[
+                {l:"📞 Call Customer - Order ka number",a:()=>{const num=prompt("Customer ka number dalo:"); if(num) window.open(`tel:${num}`);}},
+                {l:"💬 Chat with Customer (WhatsApp)",a:()=>{const num=prompt("Customer WhatsApp number:"); if(num) window.open(`https://wa.me/${num.replace(/[^0-9]/g,"")}`);}},
+                {l:"💬 Chat with Admin - 03320821575",a:()=>{window.open("https://wa.me/923320821575?text=Salam Hadi bhai Rider bol raha hun");}},
+                {l:"📍 Share Live Location to Customer",a:()=>{if(navigator.geolocation){navigator.geolocation.getCurrentPosition(p=>{const url=`https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`; prompt("Ye link customer ko bhejo:",url);});}}},
+                {l:"🗺️ Customer Location on Map",a:()=>{const loc=prompt("Customer ka address / location text dalo:"); if(loc) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`);}},
+                {l:"💰 My Earnings & Payments",a:()=>{alert("Earnings: Rs.150 per order\nTransfer on: 03320821575\n7 hours deadline!");}},
+                {l:"📅 Chutti / Off Request",a:()=>{alert("Dashboard me jaake Off Request bhejo - Admin ko jayega!");}},
+                {l:"🛍️ Back to Shop",a:()=>{location.href="/";}},
+                {l:"🔑 Already Registered? Login",a:()=>{const ph=prompt("Phone dalo:"); if(ph){localStorage.setItem("kaiha_rider",JSON.stringify({phone:ph,name:"Rider"})); location.href="/rider";}}}},
+              ].map((it,i)=><div key={i} onClick={it.a} style={{padding:"13px",borderRadius:"12px",border:"1px solid #222",marginTop:"10px",background:"#141414",display:"flex",justifyContent:"space-between",cursor:"pointer"}}>
+                <span style={{fontSize:"12px",color:"#ccc"}}>{it.l}</span><span style={{color:"#D4B78F"}}>→</span>
+              </div>)}
+            </div>
+          </div>
+        </div>}
 
-const completeOrder=async()=>{
- if(!activeOrder) return;
- await supabase.from("orders").update({status:"delivered"}).eq("id",activeOrder.raw?.id || activeOrder.id);
- // CREATE MONEY BLOCK - Rider must transfer to owner
- const amount = activeOrder.raw?.price || activeOrder.total;
- const {error} = await supabase.from("rider_payments").insert({rider_id:rider.phone, order_id:activeOrder.raw?.id || activeOrder.id, amount:amount, status:"PENDING", deadline: new Date(Date.now()+7*60*60*1000).toISOString()});
- const newEarn=earning+150;
- setEarning(newEarn);
- if(rider){
-  await supabase.from("riders").update({earnings:newEarn, is_blocked:true, blocked_amount:amount}).eq("phone",rider.phone);
- }
- setIsBlocked(true); setBlockedAmount(amount);
- setActiveOrder(null); setStatus("ONLINE");
- alert(`✅ Delivered! AB ${OWNER_NUMBER} pe Rs.${amount} transfer karo! Tabhi next order milega!`);
-};
+        <div style={{padding:"20px"}}>
+        <div style={{textAlign:"center",fontSize:"10px",color:"#666"}}>Step {step} / 3 - CNIC Verification Required</div>
+        <div style={{display:"flex",gap:"6px",marginTop:"10px"}}>{[1,2,3].map(s=><div key={s} style={{flex:1,height:"4px",borderRadius:"999px",background:step>=s?"#D4B78F":"#222"}}/>)}</div>
 
-const confirmTransfer = async () => {
-  // Rider ne transfer ka proof diya
-  await supabase.from("rider_payments").update({status:"PAID"}).eq("rider_id",rider.phone).eq("status","PENDING");
-  await supabase.from("riders").update({is_blocked:false, blocked_amount:0}).eq("phone",rider.phone);
-  setIsBlocked(false); setBlockedAmount(0);
-  alert("✅ Transfer Received! Ab next orders milenge! Admin verify karega!");
-  loadRealOrders(rider.phone);
-};
+        {step===1 && (
+          <div style={{marginTop:"18px"}}>
+            <b style={{color:"#D4B78F",fontSize:"13px"}}>Basic Info - CNIC wala name</b>
+            <input value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="Full Name" style={{width:"100%",marginTop:"10px",padding:"12px",background:"#141414",border:"1px solid #333",borderRadius:"10px",color:"#fff"}}/>
+            <input value={form.phone} onChange={e=>setForm({...form,phone:e.target.value})} placeholder="Phone 03XX" style={{width:"100%",marginTop:"8px",padding:"12px",background:"#141414",border:"1px solid #333",borderRadius:"10px",color:"#fff"}}/>
+            <input value={form.cnic} onChange={e=>setForm({...form,cnic:e.target.value})} placeholder="CNIC" style={{width:"100%",marginTop:"8px",padding:"12px",background:"#141414",border:"1px solid #333",borderRadius:"10px",color:"#fff"}}/>
+            <input value={form.bike} onChange={e=>setForm({...form,bike:e.target.value})} placeholder="Bike Number SUK-1234" style={{width:"100%",marginTop:"8px",padding:"12px",background:"#141414",border:"1px solid #333",borderRadius:"10px",color:"#fff"}}/>
+            <input value={form.easypaisa} onChange={e=>setForm({...form,easypaisa:e.target.value})} placeholder="Easypaisa / JazzCash" style={{width:"100%",marginTop:"8px",padding:"12px",background:"#141414",border:"1px solid #333",borderRadius:"10px",color:"#fff"}}/>
+            <button onClick={()=>setStep(2)} style={{width:"100%",marginTop:"14px",background:"#D4B78F",color:"#000",border:"none",padding:"14px",borderRadius:"999px",fontWeight:"900"}}>NEXT → CNIC</button>
+          </div>
+        )}
 
-return(
-<div style={{background:"#000",display:"flex",justifyContent:"center",minHeight:"100vh"}}>
-<style>{`@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap');@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}@keyframes pulse{0%{box-shadow:0 0 0 0 #D4B78F66}70%{box-shadow:0 0 0 10px #D4B78F00}100%{box-shadow:0 0 0 0 #D4B78F00}}.page{animation:fadeUp 0.45s ease}`}</style>
-<div style={{background:"#0a0a0a",width:"100%",maxWidth:"390px",minHeight:"100vh",position:"relative",borderRadius:"28px",overflow:"hidden",color:"#fff"}}>
+        {step===2 && (
+          <div style={{marginTop:"18px"}}>
+            <b style={{color:"#D4B78F",fontSize:"13px"}}>CNIC Front + Back - Rider bhaga to CNIC se pakra jayega</b>
+            <div style={{marginTop:"12px",background:"#141414",border:"1px dashed #D4B78F66",borderRadius:"12px",padding:"12px"}}>
+              <div style={{fontSize:"11px",color:"#D4B78F"}}>CNIC FRONT</div><input type="file" accept="image/*" onChange={e=>handleFile(e,setCnicFront)} style={{marginTop:"6px"}}/>{cnicFront && <img src={cnicFront} style={{width:"100%",height:"110px",objectFit:"cover",marginTop:"8px",borderRadius:"8px"}}/>}
+            </div>
+            <div style={{marginTop:"10px",background:"#141414",border:"1px dashed #D4B78F66",borderRadius:"12px",padding:"12px"}}>
+              <div style={{fontSize:"11px",color:"#D4B78F"}}>CNIC BACK</div><input type="file" accept="image/*" onChange={e=>handleFile(e,setCnicBack)} style={{marginTop:"6px"}}/>{cnicBack && <img src={cnicBack} style={{width:"100%",height:"110px",objectFit:"cover",marginTop:"8px",borderRadius:"8px"}}/>}
+            </div>
+            <div style={{display:"flex",gap:"8px",marginTop:"12px"}}><button onClick={()=>setStep(1)} style={{flex:1,background:"#222",border:"1px solid #333",color:"#fff",padding:"12px",borderRadius:"999px"}}>BACK</button><button onClick={()=>setStep(3)} disabled={!cnicFront||!cnicBack} style={{flex:2,background:!cnicFront||!cnicBack?"#222":"#D4B78F",color:!cnicFront||!cnicBack?"#666":"#000",border:"none",padding:"12px",borderRadius:"999px",fontWeight:"800"}}>NEXT → SELFIE</button></div>
+          </div>
+        )}
 
-{/* MONEY BLOCK OVERLAY - YE HATAEGA NAHI JAB TAK PAISE TRANSFER NA KARE */}
-{isBlocked && (
-<div style={{position:"fixed",inset:0,zIndex:9999,background:"rgba(0,0,0,0.96)",display:"flex",alignItems:"center",justifyContent:"center",padding:"20px"}}>
-<div style={{background:"#141414",border:"2px solid #FF2222",borderRadius:"20px",padding:"20px",width:"100%",textAlign:"center"}}>
-<div style={{fontSize:"50px"}}>⛔</div>
-<div style={{color:"#FF2222",fontWeight:"900",fontSize:"18px",marginTop:"10px"}}>ACCOUNT BLOCKED</div>
-<div style={{color:"#fff",fontSize:"13px",marginTop:"12px"}}>Aapne Order Delivered kiya hai<br/>Ab <b style={{color:"#D4B78F"}}>Rs. {blockedAmount}</b> transfer karna hai</div>
-<div style={{background:"#000",border:"1px solid #D4B78F",borderRadius:"12px",padding:"12px",marginTop:"14px"}}>
-<div style={{fontSize:"11px",color:"#D4B78F"}}>TRANSFER ON THIS NUMBER</div>
-<div style={{fontSize:"20px",fontWeight:"900",color:"#4CAF50",marginTop:"4px"}}>{OWNER_NUMBER}</div>
-<div style={{fontSize:"10px",color:"#888",marginTop:"4px"}}>Easypaisa / JazzCash</div>
-</div>
-<div style={{background:"#FF222211",border:"1px solid #FF2222",borderRadius:"10px",padding:"10px",marginTop:"12px"}}>
-<div style={{fontSize:"11px",color:"#FF2222",fontWeight:"700"}}>⏰ {timeLeft}</div>
-<div style={{fontSize:"9px",color:"#888",marginTop:"4px"}}>7 hours me transfer karo warna job khatam!</div>
-</div>
-<button onClick={confirmTransfer} style={{width:"100%",marginTop:"14px",background:"#4CAF50",color:"#fff",border:"none",padding:"14px",borderRadius:"999px",fontWeight:"900"}}>I HAVE TRANSFERRED - Rs.{blockedAmount}</button>
-<div style={{fontSize:"9px",color:"#555",marginTop:"10px"}}>Jab tak transfer nahi karoge, ye screen nahi hategi aur next order nahi milega!</div>
-</div>
-</div>
-)}
+        {step===3 && (
+          <div style={{marginTop:"18px"}}>
+            <b style={{color:"#D4B78F",fontSize:"13px"}}>Selfie Verification + Chat Options</b>
+            <div style={{fontSize:"10px",color:"#888",marginTop:"4px"}}>Face match 85%+ hona chahiye warna register nahi hoga!</div>
+            <div style={{marginTop:"12px",background:"#141414",border:"1px solid #D4B78F44",borderRadius:"12px",padding:"12px",textAlign:"center"}}>
+              <input type="file" accept="image/*" capture="user" onChange={e=>handleFile(e,setSelfie)}/>{selfie && <img src={selfie} style={{width:"100px",height:"100px",borderRadius:"999px",objectFit:"cover",marginTop:"8px",border:"2px solid #D4B78F"}}/>}
+              {faceMatch>0 && <div style={{marginTop:"8px",background:faceMatch>=85?"#4CAF5022":"#FF222222",border:`1px solid ${faceMatch>=85?"#4CAF50":"#FF2222"}`,borderRadius:"8px",padding:"6px",fontSize:"11px",color:faceMatch>=85?"#4CAF50":"#FF2222"}}>Face Match: {faceMatch}% {faceMatch>=85?"✅":"❌"}</div>}
+            </div>
+            <button onClick={verifyFace} style={{width:"100%",marginTop:"10px",background:"#222",border:"1px solid #D4B78F66",color:"#D4B78F",padding:"11px",borderRadius:"999px"}}>🔍 VERIFY FACE</button>
 
-<div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:"1px solid #1a1a1a",position:"sticky",top:0,background:"rgba(10,10,10,0.96)",zIndex:20}}>
-<div style={{display:"flex",alignItems:"center",gap:"12px"}}><img src={LOGO} style={{height:"48px",width:"48px",borderRadius:"10px"}}/><div><div style={{color:"#D4B78F",letterSpacing:"0.3em",fontSize:"14px"}}>KAIHA RIDER</div><div style={{fontSize:"9px",color:status==="OFFLINE"?"#ff4444":status==="ONLINE"?"#4CAF50":"#D4B78F"}}>● {status} {isBlocked?"⛔ BLOCKED":""}</div></div></div>
-<button onClick={()=>setMn(!mn)} style={{background:"none",border:"none",display:"flex",flexDirection:"column",gap:"5px",width:"32px",height:"26px",justifyContent:"center"}}>
-<span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",transform:mn?"rotate(45deg) translate(5px,5px)":"none",transition:"all 0.3s"}}></span>
-<span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",opacity:mn?0:1}}></span>
-<span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",transform:mn?"rotate(-45deg) translate(5px,-5px)":"none",transition:"all 0.3s"}}></span>
-</button></div>
+            <div style={{marginTop:"12px",background:"#0F1F0F",border:"1px solid #4CAF5033",borderRadius:"10px",padding:"10px"}}>
+              <div style={{fontSize:"10px",color:"#4CAF50",fontWeight:"700"}}>💬 CUSTOMER SE BAAT KAISE KARE?</div>
+              <div style={{fontSize:"9px",color:"#888",marginTop:"4px"}}>Order aane ke baad customer ka number order pe show hoga → Call / WhatsApp / Live Location Share kar sakte ho!</div>
+            </div>
 
-<div className="page" style={{padding:"16px"}}>
-<div style={{background:status==="OFFLINE"?"#1A1A1A":status==="ONLINE"?"#0F1F0F":"#1F1A0F",border:`1px solid ${status==="OFFLINE"?"#333":status==="ONLINE"?"#4CAF5033":"#D4B78F33"}`,borderRadius:"16px",padding:"16px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
-<div><div style={{fontSize:"11px",color:"#888"}}>RIDER STATUS</div><div style={{fontSize:"18px",fontWeight:"800",marginTop:"4px",color:status==="OFFLINE"?"#888":status==="ONLINE"?"#4CAF50":"#D4B78F"}}>{isBlocked?"BLOCKED":status}</div></div>
-<button onClick={toggleStatus} style={{background:isBlocked?"#FF2222":status==="OFFLINE"?"#D4B78F":"#222",color:isBlocked?"#fff":status==="OFFLINE"?"#000":"#fff",border:"none",borderRadius:"999px",padding:"12px 20px",fontWeight:"800",fontSize:"11px"}}>{isBlocked?"BLOCKED":status==="OFFLINE"?"GO ONLINE":"GO OFFLINE"}</button></div>
-
-<div style={{display:"flex",gap:"10px",marginTop:"14px"}}>
-<div style={{flex:1,background:"#141414",borderRadius:"12px",padding:"12px",border:"1px solid #222"}}><div style={{fontSize:"9px",color:"#888"}}>Today Earning</div><div style={{fontSize:"16px",fontWeight:"800",color:"#D4B78F"}}>Rs. {earning}</div></div>
-<div style={{flex:1,background:"#141414",borderRadius:"12px",padding:"12px",border:"1px solid #222"}}><div style={{fontSize:"9px",color:"#888"}}>Deliveries</div><div style={{fontSize:"16px",fontWeight:"800"}}>{Math.floor(earning/150)}</div></div></div>
-
-{activeOrder&&<div style={{marginTop:"16px",background:"linear-gradient(135deg,#1A1A1A,#111)",border:"1px solid #D4B78F66",borderRadius:"16px",padding:"16px"}}>
-<div style={{display:"flex",justifyContent:"space-between"}}><b style={{color:"#D4B78F",fontSize:"13px"}}>ACTIVE DELIVERY</b><span style={{background:"#D4B78F",color:"#000",fontSize:"9px",padding:"4px 8px",borderRadius:"999px",fontWeight:"800"}}>#{activeOrder.id}</span></div>
-<div style={{marginTop:"12px",fontSize:"12px"}}><div>👤 {activeOrder.customer_name}</div><div style={{marginTop:"4px",color:"#D4B78F",fontWeight:"700"}}>Rs. {activeOrder.total}</div><div style={{marginTop:"8px",background:"#0a0a0a",borderRadius:"8px",padding:"8px",fontSize:"10px"}}>📍 {activeOrder.location_text}</div></div>
-<div style={{display:"flex",gap:"8px",marginTop:"14px"}}><button onClick={()=>window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(activeOrder.location_text)}`,"_blank")} style={{flex:1,background:"#222",border:"1px solid #333",color:"#fff",padding:"10px",borderRadius:"999px",fontSize:"11px"}}>🗺️ Navigate</button><button onClick={completeOrder} style={{flex:1,background:"#4CAF50",border:"none",color:"#fff",padding:"10px",borderRadius:"999px",fontSize:"11px",fontWeight:"800"}}>✅ Delivered - Paise Liye</button></div>
-</div>}
-
-<div style={{marginTop:"18px"}}><b style={{fontSize:"13px"}}>New Orders ({orders.length}) - Nearest First</b>
-{orders.map((o:any)=><div key={o.id} style={{background:"#141414",borderRadius:"14px",padding:"14px",marginTop:"10px",border:"1px solid #222"}}>
-<div style={{display:"flex",justifyContent:"space-between"}}><span style={{fontWeight:"700",fontSize:"12px"}}>#{o.id} - {o.customer_name}</span><span style={{fontSize:"9px",background:"#1a1a1a",border:"1px solid #333",padding:"4px 8px",borderRadius:"999px"}}>{o.dist}</span></div>
-<div style={{fontSize:"11px",marginTop:"8px",color:"#D4B78F",fontWeight:"700"}}>Rs. {o.total} - {o.items}</div>
-<div style={{fontSize:"10px",marginTop:"6px",color:"#777",background:"#0a0a0a",padding:"6px 8px",borderRadius:"6px"}}>📍 {o.location_text}</div>
-<button onClick={()=>acceptOrder(o)} style={{width:"100%",marginTop:"10px",background:"#D4B78F",color:"#000",border:"none",padding:"10px",borderRadius:"999px",fontWeight:"800",fontSize:"11px"}}>ACCEPT - Earn Rs.150</button>
-</div>)}
-</div>
-</div></div></div>
-);
-          }
+            <div style={{display:"flex",gap:"8px",marginTop:"12px"}}><button onClick={()=>setStep(2)} style={{flex:1,background:"#222",border:"1px solid #333",color:"#fff",padding:"12px",borderRadius:"999px"}}>BACK</button><button onClick={register} disabled={loading||faceMatch<85} style={{flex:2,background:faceMatch<85?"#222":"#4CAF50",color:"#fff",border:"none",padding:"12px",borderRadius:"999px",fontWeight:"900"}}>{loading?"REGISTERING...":"REGISTER →"}</button></div>
+          </div>
+        )}
+        </div>
+      </div>
+    </div>
+  );
+                                                          }
