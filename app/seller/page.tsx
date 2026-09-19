@@ -24,16 +24,15 @@ const handleGallery=(e:any)=>{
 };
 const sendOtp=async()=>{
   if(!shopName||!accNum||!gmail) return alert("3 boxes fill karo");
-  setLoading(true);
   const localOtp=Math.floor(100000+Math.random()*900000).toString();
   localStorage.setItem("kaiha_seller_otp",localOtp);
-  setLoading(false); setStep(2); alert("OTP: "+localOtp+" or 123456");
+  setStep(2); alert("OTP: "+localOtp+" or 123456");
 };
 const verifyOtp=async()=>{
   const localOtp=localStorage.getItem("kaiha_seller_otp");
   if((localOtp&&otp===localOtp)||otp==="123456"){
     const newShop={shopName: "KAIHA", accNum, gmail, shopCat, isOpen:true, id:Date.now()};
-    localStorage.setItem("kaiha_shop",JSON.stringify(newShop)); setShopCreated(newShop); setShowLogin(false); return;
+    localStorage.setItem("kaiha_shop",JSON.stringify(newShop)); setShopCreated(newShop); setShowLogin(false);
   }else alert("Wrong OTP!");
 };
 const toggleShop=()=>{
@@ -49,17 +48,13 @@ const uploadProduct=async()=>{
     const { data, error } = await supabase.from("products").insert([{
       name: prod.name,
       price: Number(prod.price),
-      category: shopCreated.shopCat,
-      image_url: finalImg,
-      shop_name: "KAIHA",
-      stock: Number(prod.stock) || 10,
-      is_active: true
+      image_url: finalImg
     }]).select();
     if(error) throw new Error(error.message);
     const newP={id:data[0].id, shopName:"KAIHA", shopCat:shopCreated.shopCat, pr:Number(prod.price), n:prod.name, im:finalImg, stock:Number(prod.stock), isOpen:true};
     const all=[newP,...myProds]; setMyProds(all); localStorage.setItem("kaiha_seller_products",JSON.stringify(all));
     setProd({name:"",price:"",size:"M",color:"Black",stock:"10",img:"",cat:shopCreated.shopCat,sub:"MALE"}); setImgPreview("");
-    alert("✅ SUCCESS ID: "+data[0].id);
+    alert("✅ SUCCESS ID: "+data[0].id+" - Ab customer ko dikhega!");
   }catch(e:any){
     alert("❌ Error: "+e.message);
   }finally{ setLoading(false); }
@@ -97,7 +92,7 @@ return(
 <input value={prod.stock} onChange={e=>setProd({...prod,stock:e.target.value})} placeholder="Stock" type="number" style={{flex:1,background:"#141414",border:"1px solid #333",borderRadius:"8px",padding:"10px",color:"#fff"}}/>
 </div>
 <div style={{marginTop:"10px",background:"#141414",border:"1px solid #D4B78F55",borderRadius:"10px",padding:"12px"}}>
-<div style={{fontSize:"10px",color:"#D4B78F"}}>📷 Gallery - 500KB se choti</div>
+<div style={{fontSize:"10px",color:"#D4B78F"}}>📷 Gallery</div>
 <input type="file" accept="image/*" onChange={handleGallery} style={{width:"100%",color:"#fff",fontSize:"11px",marginTop:"6px"}}/>
 {imgPreview&&<img src={imgPreview} style={{width:"100%",height:"120px",objectFit:"cover",borderRadius:"8px",marginTop:"8px"}}/>}
 </div>
@@ -110,4 +105,4 @@ return(
 </div>
 </div></div></div>
 );
-  }
+}
