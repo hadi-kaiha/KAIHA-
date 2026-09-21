@@ -8,7 +8,8 @@ export default function SellerPage() {
   const [prod, setProd] = useState({ name: "", price: "", stock: "10" });
   const [mainCat, setMainCat] = useState("FASHION");
   const [subCat, setSubCat] = useState("MALE");
-  const [img, setImg] = useState("");
+  const [imgFile, setImgFile] = useState<File | null>(null);
+  const [imgPreview, setImgPreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [myProds, setMyProds] = useState<any[]>([]);
   const [sellerOrders, setSellerOrders] = useState<any[]>([]);
@@ -37,7 +38,7 @@ export default function SellerPage() {
   ];
   const sizeOptions = ["XS","S","M","L","XL","XXL","28","30","32","34","36","Free Size"];
 
-  useEffect(()=>{ fetchMine(); fetchSellerOrders(); const iv=setInterval(fetchSellerOrders,8000); return()=>clearInterval(iv); },[]);
+  useEffect(()=>{ fetchMine(); fetchSellerOrders(); const iv=setInterval(fetchSellerOrders,15000); return()=>clearInterval(iv); },[]);
 
   const fetchMine = async () => {
     const shopName = localStorage.getItem("my_shop_name") || "KAIHA";
@@ -64,9 +65,27 @@ export default function SellerPage() {
     setSellerOrders(all);
   };
 
+  // FIX 1: Compress + Preview (base64 nahi, file save)
   const handleImg = (e: any) => {
     const file = e.target.files[0]; if (!file) return;
-    const r = new FileReader(); r.onload = () => setImg(r.result as string); r.readAsDataURL(file);
+    if(file.size > 5*1024*1024) return alert("5MB se kam image lo!");
+    setImgFile(file);
+    // Preview ke liye compress karke dikhao
+    const r = new FileReader();
+    r.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const MAX = 600;
+        let w = img.width, h = img.height;
+        if(w>h){ if(w>MAX){ h*=MAX/w; w=MAX; } } else { if(h>MAX){ w*=MAX/h; h=MAX; } }
+        canvas.width=w; canvas.height=h;
+        canvas.getContext("2d")?.drawImage(img,0,0,w,h);
+        setImgPreview(canvas.toDataURL("image/jpeg",0.6));
+      };
+      img.src = r.result as string;
+    };
+    r.readAsDataURL(file);
   };
 
   const uploadProduct = async () => {
@@ -74,7 +93,19 @@ export default function SellerPage() {
     if(selectedColors.length===0) return alert("1 color to select karo!");
     setLoading(true);
     try {
-      const finalImg = img || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400";
+      let finalImg = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400";
+
+      // FIX 2: Image ko bucket me upload karo (crash khatam)
+      if(imgFile){
+        const fileName = `${Date.now()}-${imgFile.name.replace(/[^a-zA-Z0-9.]/g,"")}`;
+        const { error: upErr } = await supabase.storage.from("kaiha-images").upload(fileName, imgFile);
+        if(upErr) throw upErr;
+        const { data } = supabase.storage.from("kaiha-images").getPublicUrl(fileName);
+        finalImg = data.publicUrl;
+      } else if(imgPreview){
+        finalImg = imgPreview;
+      }
+
       const shopName = localStorage.getItem("my_shop_name") || "KAIHA";
       const { error } = await supabase.from("products").insert([{
         name: prod.name,
@@ -89,8 +120,8 @@ export default function SellerPage() {
         is_active: true
       }]);
       if (error) throw error;
-      alert(`✅ ${prod.name} add ho gaya! ${shopName} me`);
-      setProd({ name: "", price: "", stock: "10" }); setImg("");
+      alert(`✅ ${prod.name} add ho gaya!`);
+      setProd({ name: "", price: "", stock: "10" }); setImgFile(null); setImgPreview("");
       fetchMine();
     } catch (e: any) { alert("❌ " + e.message); } finally { setLoading(false); }
   };
@@ -110,13 +141,12 @@ export default function SellerPage() {
         <div style={{marginTop:"16px", background:"#141414", border:"1px solid #D4B78F88", borderRadius:"14px", padding:"12px"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}><b style={{fontSize:"12px",color:"#D4B78F"}}>📦 NEW ORDERS ({sellerOrders.length})</b><button onClick={fetchSellerOrders} style={{background:"#D4B78F",color:"#000",border:"none",borderRadius:"999px",padding:"5px 10px",fontSize:"9px",fontWeight:"800"}}>REFRESH</button></div>
           <div style={{fontSize:"9px",color:"#888",marginTop:"4px"}}>Rider will arrive in few minutes</div>
-          {sellerOrders.length===0? <div style={{color:"#666",fontSize:"11px",marginTop:"10px",textAlign:"center"}}>No orders yet - Buyer jab aapki shop ka product khareedega to yahan ayega</div> :
+          {sellerOrders.length===0? <div style={{color:"#666",fontSize:"11px",marginTop:"10px",textAlign:"center"}}>No orders yet</div> :
             sellerOrders.map((o:any)=>(
               <div key={o.id} style={{background:"#000",border:"1px solid #333",borderRadius:"10px",padding:"10px",marginTop:"8px"}}>
-                <div style={{fontWeight:"700",fontSize:"12px"}}>{o.product_name} - {o.size} {o.color}</div>
+                <div style={{fontWeight:"700",fontSize:"12px"}}>{o.product_name}</div>
                 <div style={{fontSize:"11px",marginTop:"4px"}}>👤 {o.buyer_name} - 📞 {o.buyer_phone}</div>
                 <div style={{fontSize:"11px"}}>📍 {o.buyer_location}</div>
-                <div style={{fontSize:"10px",color:"#4CAF50",marginTop:"4px"}}>{o.message}</div>
                 <button onClick={async()=>{await supabase.from("orders").update({status:"PACKED"}).eq("id",o.order_id); alert("PACKED! Rider ayega"); fetchSellerOrders();}} style={{width:"100%",marginTop:"6px",background:"#4CAF50",color:"#fff",border:"none",padding:"8px",borderRadius:"999px",fontSize:"10px",fontWeight:"800"}}>✅ PACKED</button>
               </div>
             ))
@@ -155,46 +185,35 @@ export default function SellerPage() {
         </div>
 
         <div style={{marginTop:"12px", background:"#141414", border:"1px solid #222", borderRadius:"12px", padding:"12px"}}>
-          <label style={{fontSize:"11px", color:"#D4B78F", fontWeight:"800"}}>🎨 Color Select Karo (Click karo)</label>
+          <label style={{fontSize:"11px", color:"#D4B78F", fontWeight:"800"}}>🎨 Color</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginTop:"10px"}}>
             {colorOptions.map(c=>(
               <button key={c.hex} onClick={()=>{
                 if(selectedColors.includes(c.hex)) setSelectedColors(selectedColors.filter(x=>x!==c.hex));
                 else setSelectedColors([...selectedColors, c.hex]);
-              }} style={{
-                background:c.hex, border:selectedColors.includes(c.hex)?"3px solid #D4B78F":"1px solid #444",
-                width:"44px",height:"44px",borderRadius:"10px",position:"relative"
-              }}>
+              }} style={{background:c.hex, border:selectedColors.includes(c.hex)?"3px solid #D4B78F":"1px solid #444",width:"44px",height:"44px",borderRadius:"10px",position:"relative"}}>
                 {selectedColors.includes(c.hex)&&<span style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",color:c.hex==="#FFFFFF"?"#000":"#fff",fontWeight:"900"}}>✓</span>}
               </button>
             ))}
           </div>
-          <div style={{marginTop:"8px",display:"flex",gap:"6px",alignItems:"center"}}>
-            <input type="color" onChange={e=>{ if(!selectedColors.includes(e.target.value)) setSelectedColors([...selectedColors, e.target.value])}} style={{width:"40px",height:"34px",borderRadius:"8px"}}/>
-            <span style={{fontSize:"9px",color:"#888"}}>Custom color</span>
-            <span style={{fontSize:"9px",color:"#D4B78F",marginLeft:"auto"}}>{selectedColors.length} selected</span>
-          </div>
         </div>
 
         <div style={{marginTop:"12px", background:"#141414", border:"1px solid #222", borderRadius:"12px", padding:"12px"}}>
-          <label style={{fontSize:"11px", color:"#D4B78F", fontWeight:"800"}}>📏 Size Select Karo</label>
+          <label style={{fontSize:"11px", color:"#D4B78F", fontWeight:"800"}}>📏 Size</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:"7px",marginTop:"10px"}}>
             {sizeOptions.map(s=>(
               <button key={s} onClick={()=>{
                 if(selectedSizes.includes(s)) setSelectedSizes(selectedSizes.filter(x=>x!==s));
                 else setSelectedSizes([...selectedSizes, s]);
-              }} style={{
-                background:selectedSizes.includes(s)?"#D4B78F":"#0a0a0a", color:selectedSizes.includes(s)?"#000":"#fff",
-                border:"1px solid #333",borderRadius:"999px",padding:"7px 12px",fontSize:"10px",fontWeight:"700"
-              }}>{s}</button>
+              }} style={{background:selectedSizes.includes(s)?"#D4B78F":"#0a0a0a", color:selectedSizes.includes(s)?"#000":"#fff",border:"1px solid #333",borderRadius:"999px",padding:"7px 12px",fontSize:"10px",fontWeight:"700"}}>{s}</button>
             ))}
           </div>
         </div>
 
         <div style={{ marginTop: "12px", padding: "12px", background: "#141414", border: "1px dashed #D4B78F66", borderRadius: "12px" }}>
-          <label style={{ fontSize: "11px", color: "#D4B78F" }}>Product Image</label>
+          <label style={{ fontSize: "11px", color: "#D4B78F" }}>Product Image (Bucket me jayegi - crash nahi)</label>
           <input type="file" accept="image/*" onChange={handleImg} style={{ width: "100%", marginTop: "8px", color: "#fff" }} />
-          {img && <img src={img} style={{ width: "100%", height: "160px", objectFit: "cover", marginTop: "10px", borderRadius: "10px" }} />}
+          {imgPreview && <img src={imgPreview} style={{ width: "100%", height: "160px", objectFit: "cover", marginTop: "10px", borderRadius: "10px" }} />}
         </div>
 
         <button onClick={uploadProduct} disabled={loading} style={{ width: "100%", marginTop: "14px", padding: "14px", background: "#D4B78F", color: "#000", border: "none", borderRadius: "999px", fontWeight: "900" }}>
@@ -205,11 +224,10 @@ export default function SellerPage() {
           <b style={{ fontSize: "13px", color: "#D4B78F" }}>My Uploaded ({myProds.length})</b>
           {myProds.map((p:any)=><div key={p.id} style={{ background: "#141414", border: "1px solid #222", borderRadius: "12px", padding: "10px", display: "flex", gap: "10px", marginTop: "10px" }}>
             <img src={p.image_url} style={{ width: "50px", height: "50px", borderRadius: "8px", objectFit: "cover" }} />
-            <div style={{ flex: 1 }}><div style={{ fontSize: "12px" }}>{p.name} - Rs.{p.price}</div><div style={{ fontSize: "9px", color: "#888" }}>{p.category} → {p.subcategory} | {p.sizes} | Shop:{p.shop_name}</div></div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: "12px" }}>{p.name} - Rs.{p.price}</div><div style={{ fontSize: "9px", color: "#888" }}>{p.category} → {p.subcategory}</div></div>
             <button onClick={()=>deleteProd(p.id)} style={{ background: "#FF2222", color: "#fff", border: "none", borderRadius: "8px", padding: "6px 10px", fontSize: "10px", height: "30px" }}>DEL</button>
           </div>)}
         </div>
-
       </div>
     </div>
   );
