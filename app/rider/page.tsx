@@ -18,7 +18,6 @@ useEffect(()=>{
 },[]);
 
 const checkBlockStatus=async(phone:string)=>{
- // FIX: rider_phone use karna hai rider_id nahi
  const {data}=await supabase.from("rider_payments").select("*").eq("rider_phone",phone).eq("status","PENDING").order("created_at",{ascending:false}).limit(1);
  if(data&&data.length>0){ setIsBlocked(true); setBlockedAmount(data[0].amount); setDeadline(data[0].deadline); }
  const {data:rd}=await supabase.from("riders").select("is_blocked").eq("phone",phone).single();
@@ -34,11 +33,38 @@ useEffect(()=>{
 },[deadline]);
 
 const loadRealOrders=async(phone:string)=>{
- // NEAREST LOGIC - 5KM only
- let lat=0,lng=0;
- await new Promise(res=>navigator.geolocation.getCurrentPosition((p:any)=>{lat=p.coords.latitude; lng=p.coords.longitude; res(1);},()=>res(1)));
- const {data}=await supabase.from("orders").select("*").is("rider_id",null).in("status",["PENDING","PACKED"]).limit(10);
- if(data) setOrders(data.map((o:any)=>({id:o.id, customer_name:o.buyer_name||o.customer_name||"Customer", total:o.price||o.total, location_text:o.location_text||"Sukkur", customer_phone:o.buyer_phone||o.customer_phone||"03XX", items:o.product_name||o.items, raw:o, dist:"1.5 km"})));
+ // FIXED - Ab NEW aur PENDING dono dekhega + rider_notifications bhi
+ const {data:ordersData}=await supabase.from("orders").select("*").or("status.eq.NEW,status.eq.PENDING,status.eq.PACKED").is("rider_id",null).limit(20);
+ const {data:riderNotes}=await supabase.from("rider_notifications").select("*").eq("status","PENDING").limit(20);
+
+ let all:any[]=[];
+ if(ordersData){
+   all = ordersData.map((o:any)=>({
+     id:o.id,
+     customer_name:o.buyer_name||o.customer_name||"Customer",
+     total:o.total||o.price,
+     location_text:o.buyer_location||o.location_text||"Sukkur",
+     customer_phone:o.buyer_phone||o.customer_phone||"03XX",
+     items: typeof o.items === 'string'? o.items : (o.product_name || JSON.stringify(o.items||[]).slice(0,60)),
+     raw:o
+   }));
+ }
+ if(riderNotes && riderNotes.length>0){
+   riderNotes.forEach((rn:any)=>{
+     if(!all.find((x:any)=>x.id===rn.order_id)){
+       all.push({
+         id:rn.order_id,
+         customer_name:rn.buyer_name,
+         total:rn.total,
+         location_text:rn.buyer_location,
+         customer_phone:rn.buyer_phone||"03XX",
+         items: rn.message,
+         raw:{id:rn.order_id, buyer_name:rn.buyer_name, total:rn.total, buyer_location:rn.buyer_location, buyer_phone:rn.buyer_phone}
+       });
+     }
+   });
+ }
+ setOrders(all);
 };
 
 const toggleStatus=async()=>{
@@ -49,11 +75,16 @@ const toggleStatus=async()=>{
  setStatus(ns); if(ns==="ONLINE") loadRealOrders(rider.phone);
 };
 
-const acceptOrder=async(o:any)=>{ await supabase.from("orders").update({status:"on_the_way", rider_id:rider.phone}).eq("id",o.raw.id); setActiveOrder(o); setOrders(orders.filter((x:any)=>x.id!==o.id)); setStatus("DELIVERING"); };
+const acceptOrder=async(o:any)=>{
+  await supabase.from("orders").update({status:"on_the_way", rider_id:rider.phone}).eq("id",o.raw.id);
+  await supabase.from("rider_notifications").update({status:"ACCEPTED"}).eq("order_id",o.id);
+  setActiveOrder(o); setOrders(orders.filter((x:any)=>x.id!==o.id)); setStatus("DELIVERING");
+};
 
 const completeOrder=async()=>{
  const amount=activeOrder.raw.price||activeOrder.total;
  await supabase.from("orders").update({status:"delivered"}).eq("id",activeOrder.raw.id);
+ await supabase.from("rider_notifications").update({status:"DELIVERED"}).eq("order_id",activeOrder.id);
  await supabase.from("rider_payments").insert({rider_phone:rider.phone, order_id:String(activeOrder.raw.id), amount, status:"PENDING", owner_number:OWNER_NUMBER, deadline:new Date(Date.now()+7*60*60*1000).toISOString()});
  await supabase.from("riders").update({earnings:earning+150, is_blocked:true}).eq("phone",rider.phone);
  setIsBlocked(true); setBlockedAmount(amount); setActiveOrder(null);
