@@ -40,13 +40,15 @@ export default function SellerPage() {
   useEffect(()=>{ fetchMine(); fetchSellerOrders(); const iv=setInterval(fetchSellerOrders,8000); return()=>clearInterval(iv); },[]);
 
   const fetchMine = async () => {
-    const { data } = await supabase.from("products").select("*").order("id",{ascending:false}).limit(20);
+    const shopName = localStorage.getItem("my_shop_name") || "KAIHA";
+    const { data } = await supabase.from("products").select("*").eq("shop_name", shopName).order("id",{ascending:false}).limit(20);
     setMyProds(data||[]);
   };
 
   const fetchSellerOrders = async () => {
-    const {data:notes} = await supabase.from("seller_notifications").select("*").order("created_at",{ascending:false}).limit(20);
-    const {data:ords} = await supabase.from("orders").select("*").eq("status","PENDING").order("created_at",{ascending:false}).limit(20);
+    const shopName = localStorage.getItem("my_shop_name") || "KAIHA";
+    const {data:notes} = await supabase.from("seller_notifications").select("*").eq("shop_name", shopName).order("created_at",{ascending:false}).limit(20);
+    const {data:ords} = await supabase.from("orders").select("*").eq("status","PENDING").eq("seller_name", shopName).order("created_at",{ascending:false}).limit(20);
     let all:any[] = [];
     if(notes && notes.length>0) all = notes;
     else if(ords){
@@ -73,6 +75,7 @@ export default function SellerPage() {
     setLoading(true);
     try {
       const finalImg = img || "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400";
+      const shopName = localStorage.getItem("my_shop_name") || "KAIHA";
       const { error } = await supabase.from("products").insert([{
         name: prod.name,
         price: Number(prod.price),
@@ -81,12 +84,12 @@ export default function SellerPage() {
         subcategory: subCat,
         colors: selectedColors.join(","),
         sizes: selectedSizes.join(","),
-        shop_name: "KAIHA",
+        shop_name: shopName,
         stock: Number(prod.stock) || 10,
         is_active: true
       }]);
       if (error) throw error;
-      alert(`✅ ${prod.name} add ho gaya!`);
+      alert(`✅ ${prod.name} add ho gaya! ${shopName} me`);
       setProd({ name: "", price: "", stock: "10" }); setImg("");
       fetchMine();
     } catch (e: any) { alert("❌ " + e.message); } finally { setLoading(false); }
@@ -102,11 +105,12 @@ export default function SellerPage() {
     <div style={{ background: "#000", minHeight: "100vh", display: "flex", justifyContent: "center" }}>
       <div style={{ background: "#0a0a0a", width: "100%", maxWidth: "390px", minHeight: "100vh", padding: "20px", color: "#fff" }}>
         <h1 style={{ color: "#D4B78F", textAlign: "center", fontWeight: "900" }}>KAIHA SELLER</h1>
+        <div style={{textAlign:"center", fontSize:"10px", color:"#888"}}>Shop: {typeof window!=="undefined"?localStorage.getItem("my_shop_name")||"KAIHA":"KAIHA"} • Sirf apni shop ke orders</div>
 
         <div style={{marginTop:"16px", background:"#141414", border:"1px solid #D4B78F88", borderRadius:"14px", padding:"12px"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}><b style={{fontSize:"12px",color:"#D4B78F"}}>📦 NEW ORDERS ({sellerOrders.length})</b><button onClick={fetchSellerOrders} style={{background:"#D4B78F",color:"#000",border:"none",borderRadius:"999px",padding:"5px 10px",fontSize:"9px",fontWeight:"800"}}>REFRESH</button></div>
           <div style={{fontSize:"9px",color:"#888",marginTop:"4px"}}>Rider will arrive in few minutes</div>
-          {sellerOrders.length===0? <div style={{color:"#666",fontSize:"11px",marginTop:"10px",textAlign:"center"}}>No orders yet</div> :
+          {sellerOrders.length===0? <div style={{color:"#666",fontSize:"11px",marginTop:"10px",textAlign:"center"}}>No orders yet - Buyer jab aapki shop ka product khareedega to yahan ayega</div> :
             sellerOrders.map((o:any)=>(
               <div key={o.id} style={{background:"#000",border:"1px solid #333",borderRadius:"10px",padding:"10px",marginTop:"8px"}}>
                 <div style={{fontWeight:"700",fontSize:"12px"}}>{o.product_name} - {o.size} {o.color}</div>
@@ -198,10 +202,10 @@ export default function SellerPage() {
         </button>
 
         <div style={{ marginTop: "25px", borderTop: "1px solid #222", paddingTop: "15px" }}>
-          <b style={{ fontSize: "13px", color: "#D4B78F" }}>My Uploaded</b>
+          <b style={{ fontSize: "13px", color: "#D4B78F" }}>My Uploaded ({myProds.length})</b>
           {myProds.map((p:any)=><div key={p.id} style={{ background: "#141414", border: "1px solid #222", borderRadius: "12px", padding: "10px", display: "flex", gap: "10px", marginTop: "10px" }}>
             <img src={p.image_url} style={{ width: "50px", height: "50px", borderRadius: "8px", objectFit: "cover" }} />
-            <div style={{ flex: 1 }}><div style={{ fontSize: "12px" }}>{p.name} - Rs.{p.price}</div><div style={{ fontSize: "9px", color: "#888" }}>{p.category} → {p.subcategory} | {p.sizes}</div></div>
+            <div style={{ flex: 1 }}><div style={{ fontSize: "12px" }}>{p.name} - Rs.{p.price}</div><div style={{ fontSize: "9px", color: "#888" }}>{p.category} → {p.subcategory} | {p.sizes} | Shop:{p.shop_name}</div></div>
             <button onClick={()=>deleteProd(p.id)} style={{ background: "#FF2222", color: "#fff", border: "none", borderRadius: "8px", padding: "6px 10px", fontSize: "10px", height: "30px" }}>DEL</button>
           </div>)}
         </div>
@@ -209,4 +213,4 @@ export default function SellerPage() {
       </div>
     </div>
   );
-}
+      }
