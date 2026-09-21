@@ -40,7 +40,7 @@ const REELS=[
 ];
 export default function Home(){
 const [pg,setPg]=useState("home");const [mn,setMn]=useState(false);const [cart,setCart]=useState<any[]>([]);const [user,setUser]=useState<any>(null);const [accounts,setAccounts]=useState<any[]>([]);const [showLogin,setShowLogin]=useState(false);const [form,setForm]=useState({name:"",gmail:"",phone:""});const [otp,setOtp]=useState("");const [step,setStep]=useState(1);const [loading,setLoading]=useState(false);const [mainCat,setMainCat]=useState("FASHION");const [subCat,setSubCat]=useState("MALE");const [q,setQ]=useState("");const [sellerProds,setSellerProds]=useState<any[]>([]);const [reels,setReels]=useState<any[]>(REELS);
- const [showOptions,setShowOptions]=useState<any>(null);const [selSize,setSelSize]=useState("M");const [selColor,setSelColor]=useState("#000");const [selQty,setSelQty]=useState(1);const [showCheckout,setShowCheckout]=useState(false);const [payType,setPayType]=useState("COD");const [buyerPhone,setBuyerPhone]=useState("");const [buyerName,setBuyerName]=useState("");const [locText,setLocText]=useState("");const [locLat,setLocLat]=useState<any>(null);const [locLng,setLocLng]=useState<any>(null);const [phoneOtp,setPhoneOtp]=useState("");const [phoneOtpSent,setPhoneOtpSent]=useState(false);
+const [showOptions,setShowOptions]=useState<any>(null);const [selSize,setSelSize]=useState("M");const [selColor,setSelColor]=useState("#000");const [selQty,setSelQty]=useState(1);const [showCheckout,setShowCheckout]=useState(false);const [payType,setPayType]=useState("COD");const [buyerPhone,setBuyerPhone]=useState("");const [buyerName,setBuyerName]=useState("");const [locText,setLocText]=useState("");const [locLat,setLocLat]=useState<any>(null);const [locLng,setLocLng]=useState<any>(null);const [phoneOtp,setPhoneOtp]=useState("");const [phoneOtpSent,setPhoneOtpSent]=useState(false);
 const [tvReels,setTvReels]=useState<any[]>([]); const [tvTitle,setTvTitle]=useState(""); const [tvFile,setTvFile]=useState<File|null>(null); const [tvUp,setTvUp]=useState(false); const [cmt,setCmt]=useState<{[key:number]:string}>({});
 useEffect(()=>{
 const a=localStorage.getItem("kaiha_acc");if(a)setAccounts(JSON.parse(a));
@@ -63,7 +63,7 @@ const fetchTv=async()=>{
  const {data}=await supabase.from("kaiha_tv_reels").select("*").order("created_at",{ascending:false});
  if(data) setTvReels(data);
 };
-const uploadTv=async()=>{
+ const uploadTv=async()=>{
  if(!user) {setShowLogin(true); return;}
  if(!tvFile||!tvTitle) return alert("Title + Video chahiye");
  setTvUp(true);
@@ -82,7 +82,7 @@ const likeTv=async(r:any)=>{
  await supabase.from("kaiha_tv_reels").update({likes:nl}).eq("id",r.id);
  fetchTv();
 };
- const requireLogin=(fn:any)=>{if(!user){setShowLogin(true);setStep(1);return;}fn();};
+const requireLogin=(fn:any)=>{if(!user){setShowLogin(true);setStep(1);return;}fn();};
 const sendOtp=async()=>{
 if(!form.name||!form.gmail||!form.phone)return alert("fill all");setLoading(true);
 const o=Math.floor(100000+Math.random()*900000).toString();localStorage.setItem("kaiha_local_otp",o);setLoading(false);setStep(2);alert("OTP: "+o+" or 123456");
@@ -98,11 +98,76 @@ const confirmAdd=()=>{if(!showOptions)return;const item={...showOptions,aid:Date
 const tot=cart.reduce((s:any,i:any)=>s+(i.pr||i.finalPr)*i.qty,0);
 const getCurrentLoc=()=>{navigator.geolocation.getCurrentPosition((pos)=>{setLocLat(pos.coords.latitude);setLocLng(pos.coords.longitude);setLocText(`Lat:${pos.coords.latitude.toFixed(4)} Lng:${pos.coords.longitude.toFixed(4)} - Current`);});};
 const sendPhoneOtp=()=>{if(!buyerPhone)return alert("Phone dalo");const o=Math.floor(100000+Math.random()*900000).toString();localStorage.setItem("kaiha_phone_otp",o);setPhoneOtpSent(true);alert(`OTP: ${o} (123456 works)`);};
-const placeOrder=async()=>{if(!buyerName||!buyerPhone||!locText)return alert("Name Phone Location zaruri");if(!phoneOtpSent)return alert("Pehle OTP send karo");const so=localStorage.getItem("kaiha_phone_otp");if(phoneOtp!==so&&phoneOtp!=="123456")return alert("Wrong OTP");if(cart.length===0)return alert("Bag empty");setLoading(true);try{for(let c of cart){await supabase.from("orders").insert({buyer_name:buyerName,buyer_phone:buyerPhone,buyer_gmail:user?.gmail,location_text:locText,location_lat:locLat,location_lng:locLng,product_name:c.n,product_image:c.im,quantity:c.qty,size:c.selSize,color:c.selColor,price:(c.finalPr||c.pr)*c.qty,payment_type:payType,status:"PENDING",seller_name:c.shopName});}setCart([]);setShowCheckout(false);setLoading(false);alert(`✅ Order Placed! ${payType==="ONLINE"?"03320821575 pe bhejo":"Rider ayega"}`);setPg("home");}catch(e:any){setLoading(false);alert(e.message);}};
+
+// ===== FINAL CROSS-PHONE placeOrder =====
+const placeOrder=async()=>{
+  if(!buyerName||!buyerPhone||!locText) return alert("Name Phone Location zaruri");
+  if(!phoneOtpSent) return alert("Pehle OTP send karo");
+  const so=localStorage.getItem("kaiha_phone_otp");
+  if(phoneOtp!==so&&phoneOtp!=="123456") return alert("Wrong OTP");
+  if(cart.length===0) return alert("Bag empty");
+  setLoading(true);
+  try{
+    const orderId = "KAIHA-"+Date.now().toString().slice(-6);
+    const total = cart.reduce((s:any,c:any)=>s+(c.finalPr||c.pr)*c.qty,0);
+
+    for(let c of cart){
+      await supabase.from("orders").insert({
+        id: orderId+"_"+c.aid,
+        buyer_name:buyerName,
+        buyer_phone:buyerPhone,
+        buyer_gmail:user?.gmail,
+        buyer_location:locText,
+        location_text:locText,
+        location_lat:locLat,
+        location_lng:locLng,
+        product_name:c.n,
+        product_image:c.im,
+        quantity:c.qty,
+        size:c.selSize,
+        color:c.selColor,
+        price:(c.finalPr||c.pr)*c.qty,
+        total: total,
+        payment_type:payType,
+        status:"PENDING",
+        seller_name:c.shopName||"KAIHA",
+        rider_id: null
+      });
+    }
+    for(let c of cart){
+      await supabase.from("seller_notifications").insert({
+        order_id: orderId,
+        shop_name: c.shopName||"KAIHA",
+        product_name: c.n,
+        buyer_name: buyerName,
+        buyer_phone: buyerPhone,
+        buyer_location: locText,
+        size: c.selSize,
+        color: c.selColor,
+        qty: c.qty,
+        message: `PACK THIS: ${c.n} Size:${c.selSize} Color:${c.selColor} Qty:${c.qty} - Buyer:${buyerName} - ${locText} - Rider ayega`,
+        status: "PENDING"
+      });
+    }
+    await supabase.from("rider_notifications").insert({
+      order_id: orderId,
+      buyer_name: buyerName,
+      buyer_phone: buyerPhone,
+      buyer_location: locText,
+      total: total,
+      message: `NEW ORDER ${orderId} - ${cart.map((x:any)=>x.n).join(", ")} - ${locText} Rs.${total}`,
+      status: "PENDING"
+    });
+
+    setCart([]); setShowCheckout(false); setLoading(false);
+    alert(`✅ Order Placed! ${orderId} - Seller aur Rider ko chala gaya!`);
+    setPg("home");
+  }catch(e:any){ setLoading(false); alert(e.message); }
+};
 const likeReel=(id:number)=>{const upd=reels.map(r=>r.id===id?{...r,likes:r.likes+1,liked:!r.liked}:r);setReels(upd);localStorage.setItem("kaiha_reels",JSON.stringify(upd));};
 const allProducts=[...sellerProds,...ALL];
 const filtered=allProducts.filter(p=>{if(q){return p.n.toLowerCase().includes(q.toLowerCase());}if(mainCat==="FASHION")return p.cat==="FASHION"&&p.sub===subCat;return p.cat===mainCat;});
-return(
+ return(
 <div style={{background:"#000",display:"flex",justifyContent:"center",minHeight:"100vh"}}>
 <style>{`@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500&display=swap');
 @keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:translateY(0)}}
@@ -139,9 +204,9 @@ return(
 {mainCat==="FASHION"&&<div style={{display:"flex",gap:"7px",padding:"0 16px 12px",overflowX:"auto"}}>{["MALE","FEMALE","BOY","GIRL","UNISEX"].map(s=><button key={s} onClick={()=>{setSubCat(s);setPg("category")}} style={{background:subCat===s?"#fff":"#0a0a0a",color:subCat===s?"#000":"#aaa",border:"1px solid #333",borderRadius:"999px",padding:"7px 14px",fontSize:"9px",whiteSpace:"nowrap"}}>{s}</button>)}</div>}
 <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",padding:"0 16px 16px"}}>{filtered.slice(0,20).map((p:any)=>{const isFake=!p.shopName;return(<div key={p.id} style={{background:"#141414",borderRadius:"18px",padding:"8px",border:"1px solid #222",opacity:isFake?0.6:1}}><div style={{position:"relative"}}><img src={p.im} style={{width:"100%",height:"155px",borderRadius:"14px",objectFit:"cover",filter:isFake?"grayscale(0.6)":"none"}}/>{isFake&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"#FF0000",color:"#fff",fontSize:"11px",padding:"5px 12px",borderRadius:"999px",fontWeight:"800"}}>SOLD</div>}<div style={{position:"absolute",top:"7px",left:"7px",background:isFake?"#FF0000":p.shopName?"#4CAF50":"#D4B78F",color:p.shopName?"#fff":"#000",fontSize:"7px",padding:"4px 8px",borderRadius:"999px",fontWeight:"800"}}>{isFake?"SOLD":p.shopName||p.sub}</div></div><div style={{fontSize:"12px",marginTop:"10px",fontWeight:"700"}}>{p.n}</div><div style={{fontSize:"7px",color:"#666"}}>{p.sub}</div><div style={{fontSize:"11px",color:"#D4B78F",marginTop:"3px"}}>{PKR(p.pr)}</div>{isFake?<button disabled style={{width:"100%",marginTop:"10px",background:"#222",color:"#666",border:"1px solid #333",borderRadius:"999px",padding:"10px",fontSize:"10px",fontWeight:"700"}}>SOLD OUT</button>:<button onClick={()=>openOptions(p)} style={{width:"100%",marginTop:"10px",border:"1px solid #D4B78F99",background:"none",color:"#D4B78F",borderRadius:"999px",padding:"10px",fontSize:"10px",fontWeight:"700"}}>ADD TO BAG</button>}</div>)})}</div>
 </div>}
- {pg==="category"&&<div className="page" style={{padding:"16px"}}><div style={{display:"flex",justifyContent:"space-between"}}><b>{mainCat} {mainCat==="FASHION"?`- ${subCat}`:""}</b><span onClick={()=>setPg("home")} style={{color:"#D4B78F",fontSize:"12px"}}>← Back</span></div><div style={{display:"flex",gap:"8px",marginTop:"14px",overflowX:"auto"}}>{["FASHION","BEAUTY","HOME"].map(c=><button key={c} onClick={()=>setMainCat(c)} style={{background:mainCat===c?"#D4B78F":"#141414",color:mainCat===c?"#000":"#fff",border:"1px solid #333",borderRadius:"999px",padding:"8px 16px",fontSize:"10px",fontWeight:"700"}}>{c}</button>)}</div>{mainCat==="FASHION"&&<div style={{display:"flex",gap:"7px",marginTop:"12px",overflowX:"auto"}}>{["MALE","FEMALE","BOY","GIRL","UNISEX"].map(s=><button key={s} onClick={()=>setSubCat(s)} style={{background:subCat===s?"#fff":"#222",color:subCat===s?"#000":"#aaa",border:"1px solid #333",borderRadius:"999px",padding:"7px 14px",fontSize:"9px"}}>{s}</button>)}</div>}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginTop:"16px"}}>{filtered.map((p:any)=>{const isFake=!p.shopName;return(<div key={p.id} style={{background:"#141414",borderRadius:"18px",padding:"8px",border:"1px solid #222",opacity:isFake?0.6:1}}><div style={{position:"relative"}}><img src={p.im} style={{width:"100%",height:"145px",borderRadius:"12px",objectFit:"cover",filter:isFake?"grayscale(0.6)":"none"}}/>{isFake&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"#FF0000",color:"#fff",fontSize:"10px",padding:"5px 10px",borderRadius:"999px",fontWeight:"800"}}>SOLD</div>}</div><div style={{fontSize:"11px",marginTop:"8px",fontWeight:"700"}}>{p.n}</div><div style={{fontSize:"10px",color:"#D4B78F",marginTop:"3px"}}>{PKR(p.pr)}</div>{isFake?<button disabled style={{width:"100%",marginTop:"8px",background:"#222",color:"#666",border:"1px solid #333",borderRadius:"999px",padding:"8px",fontSize:"10px"}}>SOLD OUT</button>:<button onClick={()=>openOptions(p)} style={{width:"100%",marginTop:"8px",background:"#D4B78F",border:"none",borderRadius:"999px",padding:"8px",fontSize:"10px",fontWeight:"800"}}>ADD TO BAG</button>}</div>)})}</div></div>}
+{pg==="category"&&<div className="page" style={{padding:"16px"}}><div style={{display:"flex",justifyContent:"space-between"}}><b>{mainCat} {mainCat==="FASHION"?`- ${subCat}`:""}</b><span onClick={()=>setPg("home")} style={{color:"#D4B78F",fontSize:"12px"}}>← Back</span></div><div style={{display:"flex",gap:"8px",marginTop:"14px",overflowX:"auto"}}>{["FASHION","BEAUTY","HOME"].map(c=><button key={c} onClick={()=>setMainCat(c)} style={{background:mainCat===c?"#D4B78F":"#141414",color:mainCat===c?"#000":"#fff",border:"1px solid #333",borderRadius:"999px",padding:"8px 16px",fontSize:"10px",fontWeight:"700"}}>{c}</button>)}</div>{mainCat==="FASHION"&&<div style={{display:"flex",gap:"7px",marginTop:"12px",overflowX:"auto"}}>{["MALE","FEMALE","BOY","GIRL","UNISEX"].map(s=><button key={s} onClick={()=>setSubCat(s)} style={{background:subCat===s?"#fff":"#222",color:subCat===s?"#000":"#aaa",border:"1px solid #333",borderRadius:"999px",padding:"7px 14px",fontSize:"9px"}}>{s}</button>)}</div>}<div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:"12px",marginTop:"16px"}}>{filtered.map((p:any)=>{const isFake=!p.shopName;return(<div key={p.id} style={{background:"#141414",borderRadius:"18px",padding:"8px",border:"1px solid #222",opacity:isFake?0.6:1}}><div style={{position:"relative"}}><img src={p.im} style={{width:"100%",height:"145px",borderRadius:"12px",objectFit:"cover",filter:isFake?"grayscale(0.6)":"none"}}/>{isFake&&<div style={{position:"absolute",top:"50%",left:"50%",transform:"translate(-50%,-50%)",background:"#FF0000",color:"#fff",fontSize:"10px",padding:"5px 10px",borderRadius:"999px",fontWeight:"800"}}>SOLD</div>}</div><div style={{fontSize:"11px",marginTop:"8px",fontWeight:"700"}}>{p.n}</div><div style={{fontSize:"10px",color:"#D4B78F",marginTop:"3px"}}>{PKR(p.pr)}</div>{isFake?<button disabled style={{width:"100%",marginTop:"8px",background:"#222",color:"#666",border:"1px solid #333",borderRadius:"999px",padding:"8px",fontSize:"10px"}}>SOLD OUT</button>:<button onClick={()=>openOptions(p)} style={{width:"100%",marginTop:"8px",background:"#D4B78F",border:"none",borderRadius:"999px",padding:"8px",fontSize:"10px",fontWeight:"800"}}>ADD TO BAG</button>}</div>)})}</div></div>}
 {pg==="bag"&&<div className="page" style={{padding:"16px"}}><b>Bag ({cart.length}) {PKR(tot)}</b>{cart.length===0?<div style={{color:"#888",marginTop:"30px",textAlign:"center"}}>Empty</div>:<>{cart.map((c:any,i:number)=><div key={c.aid} style={{background:"#141414",borderRadius:"12px",padding:"12px",display:"flex",gap:"12px",marginTop:"10px",border:"1px solid #222"}}><img src={c.im} style={{width:"54px",height:"54px",borderRadius:"10px"}}/><div style={{flex:1}}><div style={{fontSize:"12px"}}>{c.n}</div><div style={{fontSize:"10px",color:"#aaa"}}>Size:{c.selSize} Qty:{c.qty}</div><div style={{fontSize:"10px",color:"#D4B78F"}}>{PKR((c.finalPr||c.pr)*c.qty)}</div></div><button onClick={()=>setCart(cart.filter((_:any,idx:number)=>idx!==i))} style={{border:"1px solid #333",background:"none",color:"#888",borderRadius:"999px",width:"28px",height:"28px"}}>✕</button></div>)}<button onClick={()=>setShowCheckout(true)} style={{width:"100%",marginTop:"16px",background:"#D4B78F",color:"#000",border:"none",padding:"14px",borderRadius:"999px",fontWeight:"800"}}>CHECKOUT → {PKR(tot)}</button></>}</div>}
-{pg==="reels"&&<div className="page" style={{background:"#000",height:"calc(100vh - 130px)",overflow:"hidden",position:"relative"}}>
+ {pg==="reels"&&<div className="page" style={{background:"#000",height:"calc(100vh - 130px)",overflow:"hidden",position:"relative"}}>
 <div style={{padding:"12px 16px",display:"flex",justifyContent:"space-between",alignItems:"center",position:"absolute",top:0,left:0,right:0,zIndex:10,background:"linear-gradient(to bottom, rgba(0,0,0,0.9), transparent)"}}>
 <b style={{color:"#D4B78F",fontSize:"12px"}}>KAIHA TV 📺</b>
 <button onClick={()=>{const el=document.getElementById("uploadBox"); if(el) el.style.display=el.style.display==="none"?"block":"none"}} style={{background:"#D4B78F",color:"#000",border:"none",padding:"6px 14px",borderRadius:"999px",fontSize:"10px",fontWeight:"800"}}>+ UPLOAD</button>
@@ -183,7 +248,7 @@ return(
 ))}
 </div>
 </div>}
- {pg==="profile"&&<div className="page" style={{padding:"16px"}}><div style={{background:"linear-gradient(135deg,#111,#000)",borderRadius:"20px",padding:"16px",border:"1px solid #D4B78F55"}}><div style={{display:"flex",gap:"10px",alignItems:"center"}}><img src={LOGO} style={{width:"38px",height:"38px",borderRadius:"10px"}}/><div><div style={{fontSize:"10px",color:"#D4B78F",letterSpacing:"0.3em"}}>KAIHA BLACK</div><div style={{fontSize:"11px",fontWeight:"800"}}>{user?.name||"Guest"}</div></div></div><div style={{marginTop:"12px",display:"flex",gap:"8px"}}><div style={{background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"8px",flex:1}}><div style={{fontSize:"8px",color:"#888"}}>LOGIN ID</div><div style={{fontSize:"10px",fontWeight:"700"}}>{user?.loginId||"KAIHA-00000"}</div></div><div style={{background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"8px",flex:1}}><div style={{fontSize:"8px",color:"#888"}}>MEMBER</div><div style={{fontSize:"10px",fontWeight:"700"}}>Verified ✓</div></div></div></div><div style={{marginTop:"16px"}}><b>Accounts</b>{accounts.map((a:any,i:number)=><div key={i} onClick={()=>{localStorage.setItem("kaiha_user",JSON.stringify(a));setUser(a)}} style={{background:user?.id===a.id?"#1a1a1a":"#141414",border:"1px solid #222",borderRadius:"10px",padding:"10px",marginTop:"8px",display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:"12px"}}>{a.name}</div><div style={{fontSize:"9px",color:"#888"}}>{a.gmail}</div></div><div style={{fontSize:"10px",color:user?.id===a.id?"#D4B78F":"#666"}}>{user?.id===a.id?"Active":"Switch"}</div></div>)}</div><div style={{display:"flex",gap:"8px",marginTop:"16px"}}><button onClick={()=>{setShowLogin(true);setStep(1)}} style={{flex:1,background:"#D4B78F",color:"#000",border:"none",padding:"11px",borderRadius:"999px",fontSize:"11px",fontWeight:"800"}}>+ ADD ACCOUNT</button><button onClick={()=>{localStorage.removeItem("kaiha_user");setUser(null);setShowLogin(true)}} style={{flex:1,background:"#222",border:"1px solid #333",color:"#fff",padding:"11px",borderRadius:"999px",fontSize:"11px"}}>Logout</button></div></div>}
+{pg==="profile"&&<div className="page" style={{padding:"16px"}}><div style={{background:"linear-gradient(135deg,#111,#000)",borderRadius:"20px",padding:"16px",border:"1px solid #D4B78F55"}}><div style={{display:"flex",gap:"10px",alignItems:"center"}}><img src={LOGO} style={{width:"38px",height:"38px",borderRadius:"10px"}}/><div><div style={{fontSize:"10px",color:"#D4B78F",letterSpacing:"0.3em"}}>KAIHA BLACK</div><div style={{fontSize:"11px",fontWeight:"800"}}>{user?.name||"Guest"}</div></div></div><div style={{marginTop:"12px",display:"flex",gap:"8px"}}><div style={{background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"8px",flex:1}}><div style={{fontSize:"8px",color:"#888"}}>LOGIN ID</div><div style={{fontSize:"10px",fontWeight:"700"}}>{user?.loginId||"KAIHA-00000"}</div></div><div style={{background:"#0a0a0a",border:"1px solid #333",borderRadius:"8px",padding:"8px",flex:1}}><div style={{fontSize:"8px",color:"#888"}}>MEMBER</div><div style={{fontSize:"10px",fontWeight:"700"}}>Verified ✓</div></div></div></div><div style={{marginTop:"16px"}}><b>Accounts</b>{accounts.map((a:any,i:number)=><div key={i} onClick={()=>{localStorage.setItem("kaiha_user",JSON.stringify(a));setUser(a)}} style={{background:user?.id===a.id?"#1a1a1a":"#141414",border:"1px solid #222",borderRadius:"10px",padding:"10px",marginTop:"8px",display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:"12px"}}>{a.name}</div><div style={{fontSize:"9px",color:"#888"}}>{a.gmail}</div></div><div style={{fontSize:"10px",color:user?.id===a.id?"#D4B78F":"#666"}}>{user?.id===a.id?"Active":"Switch"}</div></div>)}</div><div style={{display:"flex",gap:"8px",marginTop:"16px"}}><button onClick={()=>{setShowLogin(true);setStep(1)}} style={{flex:1,background:"#D4B78F",color:"#000",border:"none",padding:"11px",borderRadius:"999px",fontSize:"11px",fontWeight:"800"}}>+ ADD ACCOUNT</button><button onClick={()=>{localStorage.removeItem("kaiha_user");setUser(null);setShowLogin(true)}} style={{flex:1,background:"#222",border:"1px solid #333",color:"#fff",padding:"11px",borderRadius:"999px",fontSize:"11px"}}>Logout</button></div></div>}
 <div style={{background:"#0a0a0a",borderTop:"1px solid #222",padding:"18px",marginTop:"30px",textAlign:"center",marginBottom:"80px"}}><div style={{fontSize:"11px",color:"#D4B78F",letterSpacing:"0.15em"}}>©2026 All Rights Reserved KAIHA HADI - SUKKUR</div></div>
 <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:"390px",background:"rgba(15,15,15,0.98)",backdropFilter:"blur(12px)",borderTop:"1px solid #222",borderRadius:"24px 24px 0 0",display:"flex",justifyContent:"space-around",padding:"12px 0 18px",zIndex:50}}>
 <div onClick={()=>setPg("home")} style={{color:pg==="home"?"#D4B78F":"#6B6B6B",display:"flex",flexDirection:"column",alignItems:"center",gap:"4px"}}><svg width="22" height="22" viewBox="0 0 24 24" fill={pg==="home"?"#D4B78F":"none"} stroke="currentColor" strokeWidth="1.6"><path d="M3 9.5L12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-5H9v5H4a1 1 0 0 1-1-1V9.5z"/></svg><span style={{fontSize:"8px",fontWeight:"700"}}>Home</span></div>
