@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
-
 const supabase = createClient("https://rlsmcomxugstuoeurdam.supabase.co","sb_publishable_mxCJKSppCAnMe6SwT7tbiQ_4dlOy122");
 
 export default function SellerPage() {
@@ -15,41 +14,41 @@ export default function SellerPage() {
   const [sellerOrders, setSellerOrders] = useState<any[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>(["#000000"]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(["M","L","XL"]);
+  const [shopName, setShopName] = useState("KAIHA");
 
   const subOptions: any = {
     FASHION: ["MALE","FEMALE","BOY","GIRL","UNISEX"],
     BEAUTY: ["MAKEUP"],
     HOME: ["DECOR"]
   };
-
   const colorOptions = [
-    {name:"Black", hex:"#000000"},
-    {name:"White", hex:"#FFFFFF"},
-    {name:"Beige", hex:"#D4B78F"},
-    {name:"Red", hex:"#FF0000"},
-    {name:"Blue", hex:"#0066FF"},
-    {name:"Green", hex:"#00AA00"},
-    {name:"Yellow", hex:"#FFD700"},
-    {name:"Brown", hex:"#8B4513"},
-    {name:"Grey", hex:"#808080"},
-    {name:"Pink", hex:"#FF69B4"},
-    {name:"Navy", hex:"#000080"},
-    {name:"Maroon", hex:"#800000"},
+    {name:"Black", hex:"#000000"},{name:"White", hex:"#FFFFFF"},
+    {name:"Beige", hex:"#D4B78F"},{name:"Red", hex:"#FF0000"},
+    {name:"Blue", hex:"#0066FF"},{name:"Green", hex:"#00AA00"},
+    {name:"Yellow", hex:"#FFD700"},{name:"Brown", hex:"#8B4513"},
+    {name:"Grey", hex:"#808080"},{name:"Pink", hex:"#FF69B4"},
+    {name:"Navy", hex:"#000080"},{name:"Maroon", hex:"#800000"},
   ];
   const sizeOptions = ["XS","S","M","L","XL","XXL","28","30","32","34","36","Free Size"];
 
-  useEffect(()=>{ fetchMine(); fetchSellerOrders(); const iv=setInterval(fetchSellerOrders,15000); return()=>clearInterval(iv); },[]);
+  useEffect(()=>{
+    const s = prompt("Shop Name likho: ex Hadi Store") || "KAIHA";
+    setShopName(s);
+    fetchMine(s); fetchSellerOrders(s);
+    const iv=setInterval(()=>fetchSellerOrders(s),15000);
+    return()=>clearInterval(iv);
+  },[]);
 
-  const fetchMine = async () => {
-    const shopName = localStorage.getItem("my_shop_name") || "KAIHA";
-    const { data } = await supabase.from("products").select("*").eq("shop_name", shopName).order("id",{ascending:false}).limit(20);
+  const fetchMine = async (shop = shopName) => {
+    if(!shop) return;
+    const { data } = await supabase.from("products").select("*").eq("shop_name", shop).order("id",{ascending:false}).limit(20);
     setMyProds(data||[]);
   };
 
-  const fetchSellerOrders = async () => {
-    const shopName = localStorage.getItem("my_shop_name") || "KAIHA";
-    const {data:notes} = await supabase.from("seller_notifications").select("*").eq("shop_name", shopName).order("created_at",{ascending:false}).limit(20);
-    const {data:ords} = await supabase.from("orders").select("*").eq("status","PENDING").eq("seller_name", shopName).order("created_at",{ascending:false}).limit(20);
+  const fetchSellerOrders = async (shop = shopName) => {
+    if(!shop) return;
+    const {data:notes} = await supabase.from("seller_notifications").select("*").eq("shop_name", shop).order("created_at",{ascending:false}).limit(20);
+    const {data:ords} = await supabase.from("orders").select("*").eq("status","PENDING").eq("seller_name", shop).order("created_at",{ascending:false}).limit(20);
     let all:any[] = [];
     if(notes && notes.length>0) all = notes;
     else if(ords){
@@ -58,26 +57,23 @@ export default function SellerPage() {
         product_name: typeof o.items === 'string'? o.items : o.product_name||"Order",
         buyer_name:o.buyer_name, buyer_phone:o.buyer_phone, buyer_location:o.buyer_location||o.location_text,
         size:"-", color:"-", qty:1,
-        message:`PACK THIS ITEM: ${o.product_name||"Product"} - Rider will arrive in few minutes`,
+        message:`PACK THIS ITEM: ${o.product_name||"Product"} - Rider will arrive`,
         status:o.status
       }));
     }
     setSellerOrders(all);
   };
 
-  // FIX 1: Compress + Preview (base64 nahi, file save)
   const handleImg = (e: any) => {
     const file = e.target.files[0]; if (!file) return;
     if(file.size > 5*1024*1024) return alert("5MB se kam image lo!");
     setImgFile(file);
-    // Preview ke liye compress karke dikhao
     const r = new FileReader();
     r.onload = () => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX = 600;
-        let w = img.width, h = img.height;
+        const MAX = 600; let w = img.width, h = img.height;
         if(w>h){ if(w>MAX){ h*=MAX/w; w=MAX; } } else { if(h>MAX){ w*=MAX/h; h=MAX; } }
         canvas.width=w; canvas.height=h;
         canvas.getContext("2d")?.drawImage(img,0,0,w,h);
@@ -94,8 +90,6 @@ export default function SellerPage() {
     setLoading(true);
     try {
       let finalImg = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400";
-
-      // FIX 2: Image ko bucket me upload karo (crash khatam)
       if(imgFile){
         const fileName = `${Date.now()}-${imgFile.name.replace(/[^a-zA-Z0-9.]/g,"")}`;
         const { error: upErr } = await supabase.storage.from("kaiha-images").upload(fileName, imgFile);
@@ -105,41 +99,34 @@ export default function SellerPage() {
       } else if(imgPreview){
         finalImg = imgPreview;
       }
-
-      const shopName = localStorage.getItem("my_shop_name") || "KAIHA";
       const { error } = await supabase.from("products").insert([{
-        name: prod.name,
-        price: Number(prod.price),
-        image_url: finalImg,
-        category: mainCat,
-        subcategory: subCat,
-        colors: selectedColors.join(","),
-        sizes: selectedSizes.join(","),
-        shop_name: shopName,
-        stock: Number(prod.stock) || 10,
-        is_active: true
+        name: prod.name, price: Number(prod.price), image_url: finalImg,
+        category: mainCat, subcategory: subCat,
+        colors: selectedColors.join(","), sizes: selectedSizes.join(","),
+        shop_name: shopName, stock: Number(prod.stock) || 10, is_active: true
       }]);
       if (error) throw error;
       alert(`✅ ${prod.name} add ho gaya!`);
       setProd({ name: "", price: "", stock: "10" }); setImgFile(null); setImgPreview("");
-      fetchMine();
+      fetchMine(shopName);
     } catch (e: any) { alert("❌ " + e.message); } finally { setLoading(false); }
   };
 
   const deleteProd = async (id: number) => {
     if(!confirm("Delete?")) return;
     await supabase.from("products").delete().eq("id",id);
-    fetchMine();
+    fetchMine(shopName);
   };
 
   return (
     <div style={{ background: "#000", minHeight: "100vh", display: "flex", justifyContent: "center" }}>
       <div style={{ background: "#0a0a0a", width: "100%", maxWidth: "390px", minHeight: "100vh", padding: "20px", color: "#fff" }}>
         <h1 style={{ color: "#D4B78F", textAlign: "center", fontWeight: "900" }}>KAIHA SELLER</h1>
-        <div style={{textAlign:"center", fontSize:"10px", color:"#888"}}>Shop: {typeof window!=="undefined"?localStorage.getItem("my_shop_name")||"KAIHA":"KAIHA"} • Sirf apni shop ke orders</div>
+        <input value={shopName} onChange={e=>{setShopName(e.target.value); fetchMine(e.target.value); fetchSellerOrders(e.target.value);}} placeholder="Shop Name ex: Hadi Store" style={{width:"100%",marginTop:"10px",background:"#141414",border:"1px solid #D4B78F55",borderRadius:"10px",padding:"10px",color:"#fff"}}/>
+        <div style={{textAlign:"center", fontSize:"10px", color:"#888", marginTop:"6px"}}>Shop: {shopName} • Sirf apni shop ke orders</div>
 
         <div style={{marginTop:"16px", background:"#141414", border:"1px solid #D4B78F88", borderRadius:"14px", padding:"12px"}}>
-          <div style={{display:"flex",justifyContent:"space-between"}}><b style={{fontSize:"12px",color:"#D4B78F"}}>📦 NEW ORDERS ({sellerOrders.length})</b><button onClick={fetchSellerOrders} style={{background:"#D4B78F",color:"#000",border:"none",borderRadius:"999px",padding:"5px 10px",fontSize:"9px",fontWeight:"800"}}>REFRESH</button></div>
+          <div style={{display:"flex",justifyContent:"space-between"}}><b style={{fontSize:"12px",color:"#D4B78F"}}>📦 NEW ORDERS ({sellerOrders.length})</b><button onClick={()=>fetchSellerOrders(shopName)} style={{background:"#D4B78F",color:"#000",border:"none",borderRadius:"999px",padding:"5px 10px",fontSize:"9px",fontWeight:"800"}}>REFRESH</button></div>
           <div style={{fontSize:"9px",color:"#888",marginTop:"4px"}}>Rider will arrive in few minutes</div>
           {sellerOrders.length===0? <div style={{color:"#666",fontSize:"11px",marginTop:"10px",textAlign:"center"}}>No orders yet</div> :
             sellerOrders.map((o:any)=>(
@@ -147,7 +134,7 @@ export default function SellerPage() {
                 <div style={{fontWeight:"700",fontSize:"12px"}}>{o.product_name}</div>
                 <div style={{fontSize:"11px",marginTop:"4px"}}>👤 {o.buyer_name} - 📞 {o.buyer_phone}</div>
                 <div style={{fontSize:"11px"}}>📍 {o.buyer_location}</div>
-                <button onClick={async()=>{await supabase.from("orders").update({status:"PACKED"}).eq("id",o.order_id); alert("PACKED! Rider ayega"); fetchSellerOrders();}} style={{width:"100%",marginTop:"6px",background:"#4CAF50",color:"#fff",border:"none",padding:"8px",borderRadius:"999px",fontSize:"10px",fontWeight:"800"}}>✅ PACKED</button>
+                <button onClick={async()=>{await supabase.from("orders").update({status:"PACKED"}).eq("id",o.order_id); alert("PACKED! Rider ayega"); fetchSellerOrders(shopName);}} style={{width:"100%",marginTop:"6px",background:"#4CAF50",color:"#fff",border:"none",padding:"8px",borderRadius:"999px",fontSize:"10px",fontWeight:"800"}}>✅ PACKED</button>
               </div>
             ))
           }
@@ -211,7 +198,7 @@ export default function SellerPage() {
         </div>
 
         <div style={{ marginTop: "12px", padding: "12px", background: "#141414", border: "1px dashed #D4B78F66", borderRadius: "12px" }}>
-          <label style={{ fontSize: "11px", color: "#D4B78F" }}>Product Image (Bucket me jayegi - crash nahi)</label>
+          <label style={{ fontSize: "11px", color: "#D4B78F" }}>Product Image (Bucket me jayegi)</label>
           <input type="file" accept="image/*" onChange={handleImg} style={{ width: "100%", marginTop: "8px", color: "#fff" }} />
           {imgPreview && <img src={imgPreview} style={{ width: "100%", height: "160px", objectFit: "cover", marginTop: "10px", borderRadius: "10px" }} />}
         </div>
