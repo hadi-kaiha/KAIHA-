@@ -18,16 +18,14 @@ const handleFile=(e:any,s:any)=>{
  if(f.size > 2*1024*1024) return alert("Image 2MB se kam rakho! Camera se low quality me lo");
  const r=new FileReader();
  r.onload=()=>{
-   // Compress: image ko resize karke chota karo
    const img = new Image();
    img.onload = () => {
      const canvas = document.createElement("canvas");
-     const MAX = 600;
-     let w = img.width, h = img.height;
+     const MAX = 600; let w = img.width, h = img.height;
      if(w>h){ if(w>MAX){ h*=MAX/w; w=MAX; } } else { if(h>MAX){ w*=MAX/h; h=MAX; } }
      canvas.width=w; canvas.height=h;
      canvas.getContext("2d")?.drawImage(img,0,0,w,h);
-     s(canvas.toDataURL("image/jpeg",0.6)); // 60% quality
+     s(canvas.toDataURL("image/jpeg",0.6));
    };
    img.src = r.result as string;
  };
@@ -57,9 +55,8 @@ const register=async()=>{
   face_match:faceMatch,lat,lng,status:"OFFLINE",is_online:false,earnings:0,is_blocked:false
  },{onConflict:"phone"});
  if(error) throw error;
- localStorage.setItem("kaiha_rider",JSON.stringify({phone:form.phone,name:form.name}));
  alert("✅ REGISTERED! Ab GO ONLINE kar sakte ho");
- location.href="/rider";
+ location.href="/rider?phone="+encodeURIComponent(form.phone);
  }catch(e:any){ alert("❌ "+e.message); }
  setLoading(false);
 };
@@ -109,9 +106,9 @@ return(
 </div>
 <button onClick={verifyFace} style={{width:"100%",marginTop:"10px",background:"#222",color:"#D4B78F",border:"1px solid #D4B78F66",padding:"10px",borderRadius:"999px"}}>🔍 VERIFY FACE</button>
 <button onClick={register} disabled={faceMatch<85||loading} style={{width:"100%",marginTop:"10px",background:faceMatch<85?"#222":"#4CAF50",color:"#fff",padding:"12px",borderRadius:"999px",border:"none",fontWeight:"900"}}>{loading?"REGISTERING...":"REGISTER RIDER →"}</button>
-<div style={{fontSize:"9px",color:"#666",textAlign:"center",marginTop:"8px"}}>Verify ke baad Register active hoga</div>
+<div style={{fontSize:"9px",color:"#666",textAlign:"center",marginTop:"8px"}}>No localStorage - phone URL se jayega</div>
 </div>}
 
 </div></div></div>
 );
-  }
+    }
