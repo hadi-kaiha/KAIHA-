@@ -12,10 +12,19 @@ const [isBlocked,setIsBlocked]=useState(false); const [blockedAmount,setBlockedA
 const [deadline,setDeadline]=useState<any>(null); const [timeLeft,setTimeLeft]=useState("");
 
 useEffect(()=>{
- const r=localStorage.getItem("kaiha_rider"); if(!r){location.href="/rider/login"; return;}
- const rd=JSON.parse(r); setRider(rd); setEarning(rd.earnings||0); setStatus(rd.status||"OFFLINE");
- checkBlockStatus(rd.phone); loadRealOrders(rd.phone);
+  const params = new URLSearchParams(window.location.search);
+  let phone = params.get("phone") || "";
+  if(!phone) phone = window.prompt("Rider Phone likho (ex: 0332XXXXXXX)") || "";
+  if(!phone){ location.href="/rider/login"; return; }
+  loadRider(phone);
 },[]);
+
+const loadRider = async (phone:string) => {
+  const {data} = await supabase.from("riders").select("*").eq("phone",phone).single();
+  if(!data){ alert("Rider not found - pehle rider login karo"); location.href="/rider/login?phone="+phone; return; }
+  setRider(data); setEarning(data.earnings||0); setStatus(data.status||"OFFLINE");
+  checkBlockStatus(phone); loadRealOrders(phone);
+};
 
 const checkBlockStatus=async(phone:string)=>{
  const {data}=await supabase.from("rider_payments").select("*").eq("rider_phone",phone).eq("status","PENDING").order("created_at",{ascending:false}).limit(1);
@@ -33,33 +42,23 @@ useEffect(()=>{
 },[deadline]);
 
 const loadRealOrders=async(phone:string)=>{
- // FIXED - Ab NEW aur PENDING dono dekhega + rider_notifications bhi
  const {data:ordersData}=await supabase.from("orders").select("*").or("status.eq.NEW,status.eq.PENDING,status.eq.PACKED").is("rider_id",null).limit(20);
  const {data:riderNotes}=await supabase.from("rider_notifications").select("*").eq("status","PENDING").limit(20);
-
  let all:any[]=[];
  if(ordersData){
    all = ordersData.map((o:any)=>({
-     id:o.id,
-     customer_name:o.buyer_name||o.customer_name||"Customer",
-     total:o.total||o.price,
+     id:o.id, customer_name:o.buyer_name||"Customer", total:o.total||o.price,
      location_text:o.buyer_location||o.location_text||"Sukkur",
-     customer_phone:o.buyer_phone||o.customer_phone||"03XX",
-     items: typeof o.items === 'string'? o.items : (o.product_name || JSON.stringify(o.items||[]).slice(0,60)),
-     raw:o
+     customer_phone:o.buyer_phone||"03XX", items:o.product_name||"Order", raw:o
    }));
  }
  if(riderNotes && riderNotes.length>0){
    riderNotes.forEach((rn:any)=>{
      if(!all.find((x:any)=>x.id===rn.order_id)){
        all.push({
-         id:rn.order_id,
-         customer_name:rn.buyer_name,
-         total:rn.total,
-         location_text:rn.buyer_location,
-         customer_phone:rn.buyer_phone||"03XX",
-         items: rn.message,
-         raw:{id:rn.order_id, buyer_name:rn.buyer_name, total:rn.total, buyer_location:rn.buyer_location, buyer_phone:rn.buyer_phone}
+         id:rn.order_id, customer_name:rn.buyer_name, total:rn.total,
+         location_text:rn.buyer_location, customer_phone:rn.buyer_phone||"03XX",
+         items: rn.message, raw:{id:rn.order_id, buyer_name:rn.buyer_name, total:rn.total, buyer_location:rn.buyer_location, buyer_phone:rn.buyer_phone}
        });
      }
    });
@@ -71,7 +70,7 @@ const toggleStatus=async()=>{
  if(isBlocked) return alert(`BLOCKED! Rs.${blockedAmount} transfer karo ${OWNER_NUMBER} pe!`);
  const ns=status==="OFFLINE"?"ONLINE":"OFFLINE"; let lat=0,lng=0;
  if(ns==="ONLINE"&&navigator.geolocation){ await new Promise(res=>navigator.geolocation.getCurrentPosition((p:any)=>{lat=p.coords.latitude; lng=p.coords.longitude; res(1);},()=>res(1))); }
- if(rider){ await supabase.from("riders").update({status:ns, lat, lng, earnings:earning}).eq("phone",rider.phone); localStorage.setItem("kaiha_rider", JSON.stringify({...rider,status:ns})); }
+ if(rider){ await supabase.from("riders").update({status:ns, lat, lng, earnings:earning}).eq("phone",rider.phone); }
  setStatus(ns); if(ns==="ONLINE") loadRealOrders(rider.phone);
 };
 
@@ -91,7 +90,8 @@ const completeOrder=async()=>{
  alert(`Delivered! AB ${OWNER_NUMBER} pe Rs.${amount} transfer karo!`);
  location.reload();
 };
- return(
+
+return(
 <div style={{background:"#000",display:"flex",justifyContent:"center",minHeight:"100vh"}}>
 <div style={{background:"#0a0a0a",width:"100%",maxWidth:"390px",minHeight:"100vh",position:"relative",borderRadius:"28px",overflow:"hidden",color:"#fff"}}>
 
@@ -99,13 +99,12 @@ const completeOrder=async()=>{
 <div style={{background:"#141414",border:"2px solid #FF2222",borderRadius:"20px",padding:"20px",width:"100%",textAlign:"center"}}>
 <div style={{fontSize:"40px"}}>⛔</div><div style={{color:"#FF2222",fontWeight:"900",marginTop:"8px"}}>BLOCKED - Rs.{blockedAmount}</div>
 <div style={{background:"#000",border:"1px solid #D4B78F",borderRadius:"10px",padding:"10px",marginTop:"10px"}}><div style={{fontSize:"10px",color:"#D4B78F"}}>TRANSFER HERE - Easypaisa/JazzCash SAME</div><div style={{fontSize:"18px",fontWeight:"900",color:"#4CAF50"}}>{OWNER_NUMBER}</div><div style={{fontSize:"9px",color:"#888"}}>{timeLeft} - 7 Hours Only!</div></div>
-<div style={{fontSize:"10px",color:"#888",marginTop:"10px"}}>Jab tak paisa nahi bhejoge, screen nahi hategi, next order nahi milega. Admin verify karega to unblock.</div>
-<button onClick={async()=>{await supabase.from("rider_payments").update({status:"PAID"}).eq("rider_phone",rider.phone).eq("status","PENDING"); alert("Admin ko request bhej di - 03320821575 pe bheja hai to Admin verify karega!");}} style={{width:"100%",marginTop:"12px",background:"#4CAF50",color:"#fff",border:"none",padding:"12px",borderRadius:"999px",fontWeight:"900"}}>I TRANSFERRED - VERIFY KARO</button>
+<button onClick={async()=>{await supabase.from("rider_payments").update({status:"PAID"}).eq("rider_phone",rider.phone).eq("status","PENDING"); alert("Request bheji!");}} style={{width:"100%",marginTop:"12px",background:"#4CAF50",color:"#fff",border:"none",padding:"12px",borderRadius:"999px",fontWeight:"900"}}>I TRANSFERRED - VERIFY KARO</button>
 <button onClick={()=>window.open(`https://wa.me/923320821575?text=Rider ${rider.phone} ne Rs.${blockedAmount} bhej diya ${OWNER_NUMBER} pe - Verify karo`)} style={{width:"100%",marginTop:"8px",background:"#111",border:"1px solid #333",color:"#fff",padding:"10px",borderRadius:"999px",fontSize:"11px"}}>WhatsApp Proof Bhejo</button>
 </div></div>}
 
 <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 18px",borderBottom:"1px solid #1a1a1a",background:"rgba(10,10,10,0.96)",position:"sticky",top:0,zIndex:20}}>
-<div style={{display:"flex",alignItems:"center",gap:"10px"}}><img src={LOGO} style={{height:"42px",width:"42px",borderRadius:"10px"}}/><div><div style={{color:"#D4B78F",letterSpacing:"0.3em",fontSize:"13px"}}>KAIHA RIDER</div><div style={{fontSize:"9px",color:status==="ONLINE"?"#4CAF50":"#ff4444"}}>● {status} {isBlocked?"🚫 BLOCKED":""}</div></div></div>
+<div style={{display:"flex",alignItems:"center",gap:"10px"}}><img src={LOGO} style={{height:"42px",width:"42px",borderRadius:"10px"}}/><div><div style={{color:"#D4B78F",letterSpacing:"0.3em",fontSize:"13px"}}>KAIHA RIDER</div><div style={{fontSize:"9px",color:status==="ONLINE"?"#4CAF50":"#ff4444"}}>● {status} {isBlocked?"🚫 BLOCKED":""} - {rider?.phone}</div></div></div>
 <button onClick={()=>setMn(!mn)} style={{background:"none",border:"none",display:"flex",flexDirection:"column",gap:"5px",width:"32px"}}><span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",transform:mn?"rotate(45deg) translate(5px,5px)":"none"}}></span><span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",opacity:mn?0:1}}></span><span style={{width:"26px",height:"2.5px",background:"#D4B78F",borderRadius:"2px",display:"block",transform:mn?"rotate(-45deg) translate(5px,-5px)":"none"}}></span></button>
 </div>
 
@@ -115,13 +114,12 @@ const completeOrder=async()=>{
 {[
 {l:"🏠 Dashboard",a:()=>setMn(false)},
 {l:`📞 Call Customer ${activeOrder?`- ${activeOrder.customer_phone}`:""}`,a:()=>{const num=activeOrder?.customer_phone||prompt("Customer number:"); if(num) window.open(`tel:${num}`);}},
-{l:"💬 WhatsApp Customer",a:()=>{const num=activeOrder?.customer_phone||prompt("Customer WhatsApp:"); if(num) window.open(`https://wa.me/${num.replace(/[^0-9]/g,"")}?text=Salam, Kaiha Rider bol raha hun, apka order leke araha hun`);}},
+{l:"💬 WhatsApp Customer",a:()=>{const num=activeOrder?.customer_phone||prompt("Customer WhatsApp:"); if(num) window.open(`https://wa.me/${num.replace(/[^0-9]/g,"")}?text=Salam, Kaiha Rider bol raha hun`);}},
 {l:"💬 Chat Admin - Hadi 03320821575",a:()=>window.open(`https://wa.me/923320821575?text=Rider ${rider?.name} bol raha`)},
-{l:"📍 Share Live Location",a:()=>navigator.geolocation.getCurrentPosition(p=>{const u=`https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`; window.open(`https://wa.me/?text=My Live: ${u}`);})},
 {l:"🗺️ Customer Map",a:()=>{const loc=activeOrder?.location_text||prompt("Address:"); if(loc) window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(loc)}`);}},
 {l:"💰 Earnings Rs."+earning,a:()=>{}},
 {l:"🛍️ Back to Shop",a:()=>location.href="/"},
-{l:"🚪 Logout",a:()=>{localStorage.removeItem("kaiha_rider"); location.href="/rider/login";}},
+{l:"🚪 Logout",a:()=>{ location.href="/rider/login"; }},
 ].map((it:any,i)=><div key={i} onClick={it.a} style={{padding:"12px",borderRadius:"10px",border:"1px solid #222",marginTop:"8px",background:"#141414",display:"flex",justifyContent:"space-between",cursor:"pointer"}}><span style={{fontSize:"12px",color:"#ccc"}}>{it.l}</span><span style={{color:"#D4B78F"}}>→</span></div>)}
 </div></div></div>}
 
@@ -149,4 +147,4 @@ const completeOrder=async()=>{
 </div>
 </div></div></div>
 );
- }
+       }
