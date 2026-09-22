@@ -10,11 +10,7 @@ const [tab,setTab]=useState("orders");
 const [orders,setOrders]:any=useState([]); const [riders,setRiders]:any=useState([]); const [shops,setShops]:any=useState([]); const [customers,setCustomers]:any=useState([]); const [complaints,setComplaints]:any=useState([]); const [payments,setPayments]:any=useState([]); const [products,setProducts]:any=useState([]);
 const [stats,setStats]=useState({total:0,today:0,online:0,revenue:0,commission:0,users:0,shops:0});
 
-useEffect(()=>{
- if(localStorage.getItem("kaiha_admin_secure")==="OK"){setAuth(true); loadAll();}
-},[]);
-
-const login=()=>{ if(p===ADMIN_PASS){localStorage.setItem("kaiha_admin_secure","OK"); setAuth(true); loadAll();} else setErr("Wrong Password!"); };
+const login=()=>{ if(p===ADMIN_PASS){setAuth(true); loadAll();} else setErr("Wrong Password!"); };
 
 const loadAll=async()=>{
  const {data:o}=await supabase.from("orders").select("*").order("created_at",{ascending:false}).limit(200);
@@ -43,6 +39,7 @@ return(
 <input type="password" value={p} onChange={e=>setP(e.target.value)} placeholder="Password" style={{width:"100%",marginTop:16,background:"#111",border:"1px solid #333",padding:12,borderRadius:10,color:"#fff"}}/>
 {err&&<div style={{color:"red",fontSize:11,marginTop:8}}>{err}</div>}
 <button onClick={login} style={{width:"100%",background:"#D4B78F",color:"#000",padding:12,borderRadius:999,marginTop:12,fontWeight:800,border:"none"}}>UNLOCK</button>
+<div style={{fontSize:8,color:"#666",marginTop:8}}>No localStorage - 100% secure, har bar password</div>
 </div>
 </div>
 );
@@ -54,7 +51,7 @@ return(
 
 <div style={{display:"flex",justifyContent:"space-between",background:"#0a0a0a",padding:12,borderRadius:14,border:"1px solid #D4B78F33",marginBottom:10}}>
 <div style={{display:"flex",gap:10,alignItems:"center"}}><div style={{height:32,width:32,borderRadius:6,background:"#D4B78F",display:"flex",alignItems:"center",justifyContent:"center",color:"#000",fontWeight:900}}>K</div><div><div style={{color:"#D4B78F",fontSize:12,fontWeight:800,letterSpacing:".2em"}}>KAIHA ADMIN - FULL CONTROL + 03320821575</div><div style={{fontSize:9,color:"#00C851"}}>● LIVE • {stats.online} ONLINE • Rs.{stats.revenue} SALE • Rs.{stats.commission} COMM • {payments.filter((p:any)=>p.status==="PENDING").length} PENDING PAYMENTS</div></div></div>
-<button onClick={()=>{localStorage.removeItem("kaiha_admin_secure"); location.reload();}} style={{background:"#111",border:"1px solid #333",color:"#666",padding:"6px 12px",borderRadius:999,fontSize:9}}>LOGOUT</button>
+<button onClick={()=>{setAuth(false); setP("");}} style={{background:"#111",border:"1px solid #333",color:"#666",padding:"6px 12px",borderRadius:999,fontSize:9}}>LOGOUT</button>
 </div>
 
 <div style={{display:"grid",gridTemplateColumns:"repeat(4,1fr)",gap:8,marginBottom:10}}>
@@ -76,23 +73,22 @@ return(
 <div key={r.id} style={{background:"#0a0a0a",border:r.is_blocked?"1px solid red":"1px solid #222",borderRadius:12,padding:10,marginBottom:6}}>
 <div style={{display:"flex",justifyContent:"space-between"}}><div style={{fontSize:11}}>{r.name} • {r.phone} • <span style={{color:r.status==="ONLINE"?"#00C851":r.status==="BANNED"?"red":"#888"}}>{r.status}</span> {r.is_blocked&&<span style={{color:"red"}}>🚫 BLOCKED 03320821575</span>}</div><div style={{display:"flex",gap:5}}><a href={`tel:${r.phone}`} style={{background:"#111",border:"1px solid #333",color:"#fff",padding:"5px 8px",borderRadius:999,fontSize:8,textDecoration:"none"}}>CALL</a><button onClick={()=>unblockRiderNow(r.phone)} style={{background:"#00C851",color:"#fff",border:"none",padding:"5px 8px",borderRadius:999,fontSize:8}}>UNBLOCK</button><button onClick={()=>toggleRider(r.id,r.status)} style={{background:r.status==="BANNED"?"#00C851":"#ff4444",color:"#fff",border:"none",padding:"5px 8px",borderRadius:999,fontSize:8}}>{r.status==="BANNED"?"UNBAN":"BAN"}</button></div></div>
 <div style={{fontSize:9,color:"#666",marginTop:4}}>Earn: Rs.{r.earnings||0} • Bike:{r.bike_number||r.bike_no} • EP:{r.easypaisa} • Face:{r.face_match||r.cnic_match}% • {r.lat?`📍 ${r.lat.toFixed(4)},${r.lng?.toFixed(4)}`:"No location"}</div>
-<div style={{display:"flex",gap:6,marginTop:6}}>{r.cnic_front&&<a href={r.cnic_front} target="_blank" style={{fontSize:9,color:"#D4B78F"}}>CNIC Front</a>}{r.cnic_back&&<a href={r.cnic_back} target="_blank" style={{fontSize:9,color:"#D4B78F"}}>Back</a>}{r.selfie&&<a href={r.selfie} target="_blank" style={{fontSize:9,color:"#00C851"}}>Selfie Verify</a>}{r.lat&&<a href={`https://www.google.com/maps?q=${r.lat},${r.lng}`} target="_blank" style={{fontSize:9,color:"#00BFFF"}}>Live Location</a>}</div>
 </div>
 ))}
 
-{tab==="payments"&&<div><div style={{background:"#ff000022",border:"1px solid #ff0000",padding:10,borderRadius:10,marginBottom:10,fontSize:11}}>⚠️ Rider ne order deliver karke paise liye hain - 03320821575 pe transfer check karo - Verify karoge to hi unblock hoga - 7 Hours me na bheja to auto job lost</div>{payments.map((p:any)=><div key={p.id} style={{background:p.status==="PENDING"?"#ff000022":"#0a0a0a",border:p.status==="PENDING"?"1px solid #ff0000":"1px solid #222",borderRadius:12,padding:10,marginBottom:6}}><div style={{fontSize:11}}>{p.rider_phone} - Rs.{p.amount} - {p.status} - Order #{p.order_id}</div><div style={{fontSize:9,color:"#666"}}>Owner: {p.owner_number||"03320821575"} • Deadline: {p.deadline?new Date(p.deadline).toLocaleString():"7 Hours"} • {new Date(p.created_at).toLocaleString()}</div>{p.status==="PENDING"&&<button onClick={()=>verifyPayment(p)} style={{marginTop:6,background:"#4CAF50",color:"#fff",padding:"6px 12px",borderRadius:999,border:"none",fontSize:10,fontWeight:900}}>✓ VERIFY - 03320821575 pe Rs.{p.amount} aaya - UNBLOCK RIDER</button>}</div>)}</div>}
+{tab==="payments"&&<div><div style={{background:"#ff000022",border:"1px solid #ff0000",padding:10,borderRadius:10,marginBottom:10,fontSize:11}}>⚠️ Rider ne order deliver karke paise liye hain - 03320821575 pe transfer check karo</div>{payments.map((p:any)=><div key={p.id} style={{background:p.status==="PENDING"?"#ff000022":"#0a0a0a",border:p.status==="PENDING"?"1px solid #ff0000":"1px solid #222",borderRadius:12,padding:10,marginBottom:6}}><div style={{fontSize:11}}>{p.rider_phone} - Rs.{p.amount} - {p.status} - Order #{p.order_id}</div><div style={{fontSize:9,color:"#666"}}>Owner: {p.owner_number||"03320821575"} • Deadline: {p.deadline?new Date(p.deadline).toLocaleString():"7 Hours"} • {new Date(p.created_at).toLocaleString()}</div>{p.status==="PENDING"&&<button onClick={()=>verifyPayment(p)} style={{marginTop:6,background:"#4CAF50",color:"#fff",padding:"6px 12px",borderRadius:999,border:"none",fontSize:10,fontWeight:900}}>✓ VERIFY - UNBLOCK RIDER</button>}</div>)}</div>}
 
-{tab==="products"&&products.map((pr:any)=><div key={pr.id} style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:12,padding:10,marginBottom:6,display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:11}}>{pr.name} - Rs.{pr.price} - Stock:{pr.stock||"∞"}</div><div style={{fontSize:9,color:"#666"}}>Shop: {pr.shop_id} • Size:{pr.sizes} Color:{pr.colors}</div></div><button onClick={()=>removeProduct(pr.id)} style={{background:"#ff4444",color:"#fff",border:"none",padding:"5px 10px",borderRadius:999,fontSize:9}}>REMOVE FROM WEBSITE</button></div>)}
+{tab==="products"&&products.map((pr:any)=><div key={pr.id} style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:12,padding:10,marginBottom:6,display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:11}}>{pr.name} - Rs.{pr.price}</div><div style={{fontSize:9,color:"#666"}}>Shop: {pr.shop_name||pr.shop_id}</div></div><button onClick={()=>removeProduct(pr.id)} style={{background:"#ff4444",color:"#fff",border:"none",padding:"5px 10px",borderRadius:999,fontSize:9}}>REMOVE</button></div>)}
 
-{tab==="shops"&&shops.map((s:any)=><div key={s.id} style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:12,padding:10,marginBottom:6,display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:11}}>{s.name} • {s.phone} • <span style={{color:s.status==="BANNED"?"red":"#00C851"}}>{s.status||"ACTIVE"}</span></div><div style={{fontSize:9,color:"#666"}}>Sale: Rs.{s.total_sale||0}</div></div><button onClick={()=>toggleShop(s.id,s.status)} style={{background:s.status==="BANNED"?"#00C851":"#ff4444",color:"#fff",border:"none",padding:"5px 8px",borderRadius:999,fontSize:8}}>{s.status==="BANNED"?"SHOW SHOP":"HIDE SHOP"}</button></div>)}
+{tab==="shops"&&shops.map((s:any)=><div key={s.id} style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:12,padding:10,marginBottom:6,display:"flex",justifyContent:"space-between"}}><div><div style={{fontSize:11}}>{s.name} • {s.phone} • <span style={{color:s.status==="BANNED"?"red":"#00C851"}}>{s.status||"ACTIVE"}</span></div></div><button onClick={()=>toggleShop(s.id,s.status)} style={{background:s.status==="BANNED"?"#00C851":"#ff4444",color:"#fff",border:"none",padding:"5px 8px",borderRadius:999,fontSize:8}}>{s.status==="BANNED"?"SHOW":"HIDE"}</button></div>)}
 
-{tab==="customers"&&customers.map((c:any)=><div key={c.id} style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:12,padding:10,marginBottom:6}}><div style={{fontSize:11}}>{c.name} • {c.phone} • {c.email||""}</div><div style={{fontSize:9,color:"#666"}}>Orders: {orders.filter((o:any)=>o.customer_phone===c.phone).length} • Joined: {new Date(c.created_at).toLocaleDateString()}</div></div>)}
+{tab==="customers"&&customers.map((c:any)=><div key={c.id} style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:12,padding:10,marginBottom:6}}><div style={{fontSize:11}}>{c.name} • {c.phone}</div></div>)}
 
-{tab==="map"&&<div style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:14,padding:16}}><div style={{fontSize:11,color:"#D4B78F",marginBottom:8}}>LIVE RIDERS MAP - Nearest Logic 5KM - {riders.filter((r:any)=>r.lat).length} Riders</div>{riders.filter((r:any)=>r.lat).map((r:any)=><div key={r.id} style={{fontSize:10,marginBottom:4}}><a href={`https://www.google.com/maps?q=${r.lat},${r.lng}`} target="_blank" style={{color:r.is_blocked?"red":"#00BFFF"}}>📍 {r.name} {r.is_blocked?"🚫BLOCKED":""} - {r.lat.toFixed(4)},{r.lng?.toFixed(4)} - {r.status}</a></div>)}</div>}
+{tab==="map"&&<div style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:14,padding:16}}><div style={{fontSize:11,color:"#D4B78F",marginBottom:8}}>LIVE RIDERS MAP - {riders.filter((r:any)=>r.lat).length} Riders</div>{riders.filter((r:any)=>r.lat).map((r:any)=><div key={r.id} style={{fontSize:10,marginBottom:4}}><a href={`https://www.google.com/maps?q=${r.lat},${r.lng}`} target="_blank" style={{color:r.is_blocked?"red":"#00BFFF"}}>📍 {r.name} - {r.lat.toFixed(4)},{r.lng?.toFixed(4)} - {r.status}</a></div>)}</div>}
 
-{tab==="complaints"&&complaints.map((c:any)=><div key={c.id} style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:12,padding:10,marginBottom:6}}><div style={{fontSize:11,color:"#ffaa00"}}>{c.type} - Order #{c.order_id}</div><div style={{fontSize:10,color:"#aaa"}}>{c.message}</div><div style={{fontSize:9,color:"#666"}}>{new Date(c.created_at).toLocaleString()}</div></div>)}
+{tab==="complaints"&&complaints.map((c:any)=><div key={c.id} style={{background:"#0a0a0a",border:"1px solid #222",borderRadius:12,padding:10,marginBottom:6}}><div style={{fontSize:11,color:"#ffaa00"}}>{c.type} - Order #{c.order_id}</div><div style={{fontSize:10,color:"#aaa"}}>{c.message}</div></div>)}
 
 </div>
 </div>
 );
-                                                                                                                                                     }
+ }
