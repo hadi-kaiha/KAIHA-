@@ -14,7 +14,7 @@ export default function SellerPage() {
   const [sellerOrders, setSellerOrders] = useState<any[]>([]);
   const [selectedColors, setSelectedColors] = useState<string[]>(["#000000"]);
   const [selectedSizes, setSelectedSizes] = useState<string[]>(["M","L","XL"]);
-  const [shopName, setShopName] = useState("KAIHA");
+  const [shopName, setShopName] = useState("");
 
   const subOptions: any = {
     FASHION: ["MALE","FEMALE","BOY","GIRL","UNISEX"],
@@ -32,20 +32,24 @@ export default function SellerPage() {
   const sizeOptions = ["XS","S","M","L","XL","XXL","28","30","32","34","36","Free Size"];
 
   useEffect(()=>{
-    const s = prompt("Shop Name likho: ex Hadi Store") || "KAIHA";
+    // FIX: URL se shop lo, warna prompt
+    const params = new URLSearchParams(window.location.search);
+    let s = params.get("shop") || "";
+    if(!s) s = window.prompt("Shop Name likho: ex Hadi Store") || "KAIHA";
+    s = s.trim();
     setShopName(s);
     fetchMine(s); fetchSellerOrders(s);
     const iv=setInterval(()=>fetchSellerOrders(s),15000);
     return()=>clearInterval(iv);
   },[]);
 
-  const fetchMine = async (shop = shopName) => {
+  const fetchMine = async (shop:string) => {
     if(!shop) return;
     const { data } = await supabase.from("products").select("*").eq("shop_name", shop).order("id",{ascending:false}).limit(20);
     setMyProds(data||[]);
   };
 
-  const fetchSellerOrders = async (shop = shopName) => {
+  const fetchSellerOrders = async (shop:string) => {
     if(!shop) return;
     const {data:notes} = await supabase.from("seller_notifications").select("*").eq("shop_name", shop).order("created_at",{ascending:false}).limit(20);
     const {data:ords} = await supabase.from("orders").select("*").eq("status","PENDING").eq("seller_name", shop).order("created_at",{ascending:false}).limit(20);
@@ -127,7 +131,6 @@ export default function SellerPage() {
 
         <div style={{marginTop:"16px", background:"#141414", border:"1px solid #D4B78F88", borderRadius:"14px", padding:"12px"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}><b style={{fontSize:"12px",color:"#D4B78F"}}>📦 NEW ORDERS ({sellerOrders.length})</b><button onClick={()=>fetchSellerOrders(shopName)} style={{background:"#D4B78F",color:"#000",border:"none",borderRadius:"999px",padding:"5px 10px",fontSize:"9px",fontWeight:"800"}}>REFRESH</button></div>
-          <div style={{fontSize:"9px",color:"#888",marginTop:"4px"}}>Rider will arrive in few minutes</div>
           {sellerOrders.length===0? <div style={{color:"#666",fontSize:"11px",marginTop:"10px",textAlign:"center"}}>No orders yet</div> :
             sellerOrders.map((o:any)=>(
               <div key={o.id} style={{background:"#000",border:"1px solid #333",borderRadius:"10px",padding:"10px",marginTop:"8px"}}>
@@ -144,7 +147,6 @@ export default function SellerPage() {
           <label style={{ fontSize: "11px", color: "#D4B78F" }}>Product Name</label>
           <input value={prod.name} onChange={e => setProd({...prod, name: e.target.value })} placeholder="Black tee" style={{ width: "100%", padding: "12px", marginTop: "6px", background: "#141414", border: "1px solid #333", borderRadius: "10px", color: "#fff" }} />
         </div>
-
         <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: "11px", color: "#D4B78F" }}>Main Category</label>
@@ -159,7 +161,6 @@ export default function SellerPage() {
             </select>
           </div>
         </div>
-
         <div style={{ display: "flex", gap: "10px", marginTop: "10px" }}>
           <div style={{ flex: 1 }}>
             <label style={{ fontSize: "11px", color: "#D4B78F" }}>Price Rs</label>
@@ -170,7 +171,6 @@ export default function SellerPage() {
             <input value={prod.stock} onChange={e => setProd({...prod, stock: e.target.value })} type="number" style={{ width: "100%", padding: "12px", marginTop: "6px", background: "#141414", border: "1px solid #333", borderRadius: "10px", color: "#fff" }} />
           </div>
         </div>
-
         <div style={{marginTop:"12px", background:"#141414", border:"1px solid #222", borderRadius:"12px", padding:"12px"}}>
           <label style={{fontSize:"11px", color:"#D4B78F", fontWeight:"800"}}>🎨 Color</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:"8px",marginTop:"10px"}}>
@@ -184,7 +184,6 @@ export default function SellerPage() {
             ))}
           </div>
         </div>
-
         <div style={{marginTop:"12px", background:"#141414", border:"1px solid #222", borderRadius:"12px", padding:"12px"}}>
           <label style={{fontSize:"11px", color:"#D4B78F", fontWeight:"800"}}>📏 Size</label>
           <div style={{display:"flex",flexWrap:"wrap",gap:"7px",marginTop:"10px"}}>
@@ -196,17 +195,14 @@ export default function SellerPage() {
             ))}
           </div>
         </div>
-
         <div style={{ marginTop: "12px", padding: "12px", background: "#141414", border: "1px dashed #D4B78F66", borderRadius: "12px" }}>
           <label style={{ fontSize: "11px", color: "#D4B78F" }}>Product Image (Bucket me jayegi)</label>
           <input type="file" accept="image/*" onChange={handleImg} style={{ width: "100%", marginTop: "8px", color: "#fff" }} />
           {imgPreview && <img src={imgPreview} style={{ width: "100%", height: "160px", objectFit: "cover", marginTop: "10px", borderRadius: "10px" }} />}
         </div>
-
         <button onClick={uploadProduct} disabled={loading} style={{ width: "100%", marginTop: "14px", padding: "14px", background: "#D4B78F", color: "#000", border: "none", borderRadius: "999px", fontWeight: "900" }}>
           {loading? "UPLOADING..." : `UPLOAD TO ${mainCat} > ${subCat}`}
         </button>
-
         <div style={{ marginTop: "25px", borderTop: "1px solid #222", paddingTop: "15px" }}>
           <b style={{ fontSize: "13px", color: "#D4B78F" }}>My Uploaded ({myProds.length})</b>
           {myProds.map((p:any)=><div key={p.id} style={{ background: "#141414", border: "1px solid #222", borderRadius: "12px", padding: "10px", display: "flex", gap: "10px", marginTop: "10px" }}>
@@ -218,4 +214,4 @@ export default function SellerPage() {
       </div>
     </div>
   );
-    }
+      }
