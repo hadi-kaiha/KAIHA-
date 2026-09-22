@@ -3,11 +3,17 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 const supabase = createClient("https://rlsmcomxugstuoeurdam.supabase.co","sb_publishable_mxCJKSppCAnMe6SwT7tbiQ_4dlOy122");
 
+function dataURLtoFile(dataurl:string, filename:string){
+  const arr = dataurl.split(','), mime = arr[0].match(/:(.*?);/)![1];
+  const bstr = atob(arr[1]); let n = bstr.length; const u8arr = new Uint8Array(n);
+  while(n--){ u8arr[n] = bstr.charCodeAt(n); }
+  return new File([u8arr], filename, {type:mime});
+}
+
 export default function SellerPage() {
   const [prod, setProd] = useState({ name: "", price: "", stock: "10" });
   const [mainCat, setMainCat] = useState("FASHION");
   const [subCat, setSubCat] = useState("MALE");
-  const [imgFile, setImgFile] = useState<File | null>(null);
   const [imgPreview, setImgPreview] = useState("");
   const [loading, setLoading] = useState(false);
   const [myProds, setMyProds] = useState<any[]>([]);
@@ -32,7 +38,6 @@ export default function SellerPage() {
   const sizeOptions = ["XS","S","M","L","XL","XXL","28","30","32","34","36","Free Size"];
 
   useEffect(()=>{
-    // FIX: URL se shop lo, warna prompt
     const params = new URLSearchParams(window.location.search);
     let s = params.get("shop") || "";
     if(!s) s = window.prompt("Shop Name likho: ex Hadi Store") || "KAIHA";
@@ -60,7 +65,6 @@ export default function SellerPage() {
         id:o.id, order_id:o.id,
         product_name: typeof o.items === 'string'? o.items : o.product_name||"Order",
         buyer_name:o.buyer_name, buyer_phone:o.buyer_phone, buyer_location:o.buyer_location||o.location_text,
-        size:"-", color:"-", qty:1,
         message:`PACK THIS ITEM: ${o.product_name||"Product"} - Rider will arrive`,
         status:o.status
       }));
@@ -71,17 +75,16 @@ export default function SellerPage() {
   const handleImg = (e: any) => {
     const file = e.target.files[0]; if (!file) return;
     if(file.size > 5*1024*1024) return alert("5MB se kam image lo!");
-    setImgFile(file);
     const r = new FileReader();
     r.onload = () => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement("canvas");
-        const MAX = 600; let w = img.width, h = img.height;
+        const MAX = 400; let w = img.width, h = img.height; // FIX 400
         if(w>h){ if(w>MAX){ h*=MAX/w; w=MAX; } } else { if(h>MAX){ w*=MAX/h; h=MAX; } }
         canvas.width=w; canvas.height=h;
         canvas.getContext("2d")?.drawImage(img,0,0,w,h);
-        setImgPreview(canvas.toDataURL("image/jpeg",0.6));
+        setImgPreview(canvas.toDataURL("image/jpeg",0.35)); // FIX 0.35 = 70KB
       };
       img.src = r.result as string;
     };
@@ -94,14 +97,13 @@ export default function SellerPage() {
     setLoading(true);
     try {
       let finalImg = "https://images.unsplash.com/photo-1591047139829-d91aecb6caea?w=400";
-      if(imgFile){
-        const fileName = `${Date.now()}-${imgFile.name.replace(/[^a-zA-Z0-9.]/g,"")}`;
-        const { error: upErr } = await supabase.storage.from("kaiha-images").upload(fileName, imgFile);
+      if(imgPreview){
+        const compressedFile = dataURLtoFile(imgPreview, `${Date.now()}.jpg`);
+        const fileName = `${Date.now()}-${Math.random().toString(36).slice(2)}.jpg`;
+        const { error: upErr } = await supabase.storage.from("kaiha-images").upload(fileName, compressedFile);
         if(upErr) throw upErr;
         const { data } = supabase.storage.from("kaiha-images").getPublicUrl(fileName);
         finalImg = data.publicUrl;
-      } else if(imgPreview){
-        finalImg = imgPreview;
       }
       const { error } = await supabase.from("products").insert([{
         name: prod.name, price: Number(prod.price), image_url: finalImg,
@@ -110,8 +112,8 @@ export default function SellerPage() {
         shop_name: shopName, stock: Number(prod.stock) || 10, is_active: true
       }]);
       if (error) throw error;
-      alert(`✅ ${prod.name} add ho gaya!`);
-      setProd({ name: "", price: "", stock: "10" }); setImgFile(null); setImgPreview("");
+      alert(`✅ ${prod.name} add ho gaya! 70KB me`);
+      setProd({ name: "", price: "", stock: "10" }); setImgPreview("");
       fetchMine(shopName);
     } catch (e: any) { alert("❌ " + e.message); } finally { setLoading(false); }
   };
@@ -127,7 +129,7 @@ export default function SellerPage() {
       <div style={{ background: "#0a0a0a", width: "100%", maxWidth: "390px", minHeight: "100vh", padding: "20px", color: "#fff" }}>
         <h1 style={{ color: "#D4B78F", textAlign: "center", fontWeight: "900" }}>KAIHA SELLER</h1>
         <input value={shopName} onChange={e=>{setShopName(e.target.value); fetchMine(e.target.value); fetchSellerOrders(e.target.value);}} placeholder="Shop Name ex: Hadi Store" style={{width:"100%",marginTop:"10px",background:"#141414",border:"1px solid #D4B78F55",borderRadius:"10px",padding:"10px",color:"#fff"}}/>
-        <div style={{textAlign:"center", fontSize:"10px", color:"#888", marginTop:"6px"}}>Shop: {shopName} • Sirf apni shop ke orders</div>
+        <div style={{textAlign:"center", fontSize:"10px", color:"#888", marginTop:"6px"}}>Shop: {shopName} • 0.35 quality = 14k products in 1GB</div>
 
         <div style={{marginTop:"16px", background:"#141414", border:"1px solid #D4B78F88", borderRadius:"14px", padding:"12px"}}>
           <div style={{display:"flex",justifyContent:"space-between"}}><b style={{fontSize:"12px",color:"#D4B78F"}}>📦 NEW ORDERS ({sellerOrders.length})</b><button onClick={()=>fetchSellerOrders(shopName)} style={{background:"#D4B78F",color:"#000",border:"none",borderRadius:"999px",padding:"5px 10px",fontSize:"9px",fontWeight:"800"}}>REFRESH</button></div>
@@ -196,22 +198,14 @@ export default function SellerPage() {
           </div>
         </div>
         <div style={{ marginTop: "12px", padding: "12px", background: "#141414", border: "1px dashed #D4B78F66", borderRadius: "12px" }}>
-          <label style={{ fontSize: "11px", color: "#D4B78F" }}>Product Image (Bucket me jayegi)</label>
+          <label style={{ fontSize: "11px", color: "#D4B78F" }}>Product Image (70KB compressed)</label>
           <input type="file" accept="image/*" onChange={handleImg} style={{ width: "100%", marginTop: "8px", color: "#fff" }} />
           {imgPreview && <img src={imgPreview} style={{ width: "100%", height: "160px", objectFit: "cover", marginTop: "10px", borderRadius: "10px" }} />}
         </div>
         <button onClick={uploadProduct} disabled={loading} style={{ width: "100%", marginTop: "14px", padding: "14px", background: "#D4B78F", color: "#000", border: "none", borderRadius: "999px", fontWeight: "900" }}>
-          {loading? "UPLOADING..." : `UPLOAD TO ${mainCat} > ${subCat}`}
+          {loading? "UPLOADING 70KB..." : `UPLOAD TO ${mainCat} > ${subCat}`}
         </button>
-        <div style={{ marginTop: "25px", borderTop: "1px solid #222", paddingTop: "15px" }}>
-          <b style={{ fontSize: "13px", color: "#D4B78F" }}>My Uploaded ({myProds.length})</b>
-          {myProds.map((p:any)=><div key={p.id} style={{ background: "#141414", border: "1px solid #222", borderRadius: "12px", padding: "10px", display: "flex", gap: "10px", marginTop: "10px" }}>
-            <img src={p.image_url} style={{ width: "50px", height: "50px", borderRadius: "8px", objectFit: "cover" }} />
-            <div style={{ flex: 1 }}><div style={{ fontSize: "12px" }}>{p.name} - Rs.{p.price}</div><div style={{ fontSize: "9px", color: "#888" }}>{p.category} → {p.subcategory}</div></div>
-            <button onClick={()=>deleteProd(p.id)} style={{ background: "#FF2222", color: "#fff", border: "none", borderRadius: "8px", padding: "6px 10px", fontSize: "10px", height: "30px" }}>DEL</button>
-          </div>)}
-        </div>
       </div>
     </div>
   );
-      }
+    }
