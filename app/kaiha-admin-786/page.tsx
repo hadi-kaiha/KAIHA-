@@ -9,7 +9,7 @@ const login=()=>{ if(p===ADMIN_PASS){setAuth(true); loadAll();} else setErr("Wro
 const loadAll=async()=>{
  const {data:o}=await supabase.from("orders").select("*").order("created_at",{ascending:false}).limit(200);
  const {data:r}=await supabase.from("riders").select("*");
- const {data:s}=await supabase.from("shops").select("*");
+ const {data:s}=await supabase.from("sellers").select("*");
  const {data:c}=await supabase.from("customers").select("*");
  const {data:comp}=await supabase.from("complaints").select("*").order("created_at",{ascending:false}).limit(50);
  const {data:pay}=await supabase.from("rider_payments").select("*").order("created_at",{ascending:false}).limit(100);
@@ -19,11 +19,9 @@ const loadAll=async()=>{
 };
 const updateOrder=async(id:number,s:string)=>{ await supabase.from("orders").update({status:s}).eq("id",id); loadAll(); };
 
-// ADMIN SE DELETE + VERIFY - YAHAN SE ASAL KAAM HOGA
 const verifyPayment=async(pay:any)=>{
  if(!confirm(`Rs.${pay.amount} - ${pay.rider_phone} ka ${OWNER_NUMBER} pe aaya? VERIFY + DELETE karna hai?`)) return;
  try{
-   // 1. Storage se receipt delete (Admin panel se allow hai)
    if(pay.screenshot_url){
      try{
        const parts = pay.screenshot_url.split("/receipts/");
@@ -34,14 +32,12 @@ const verifyPayment=async(pay:any)=>{
        }
      }catch(e){ console.log("Delete skip"); }
    }
-   // 2. Payment VERIFIED + Rider UNBLOCK Wallet 0
    await supabase.from("rider_payments").update({status:"VERIFIED"}).eq("id",pay.id);
-   await supabase.from("riders").update({is_blocked:false,wallet:0,wallet_balance:0}).eq("phone",pay.rider_phone);
+   await supabase.from("riders").update({is_blocked:false,wallet:0}).eq("phone",pay.rider_phone);
    loadAll(); alert(`✅ VERIFIED + DELETED + UNBLOCKED\nRider: ${pay.rider_phone}\nWallet: 0\nReceipt: Deleted from Storage`);
  }catch(e:any){ alert("Error: "+e.message); loadAll(); }
 };
 
-// Sirf receipt delete (bina verify)
 const deleteReceiptOnly=async(pay:any)=>{
   if(!confirm(`Sirf receipt delete karni hai? ${pay.rider_phone}`)) return;
   try{
@@ -53,9 +49,9 @@ const deleteReceiptOnly=async(pay:any)=>{
   }catch(e:any){ alert(e.message); }
 };
 
-const unblockRiderNow=async(phone:string)=>{ await supabase.from("riders").update({is_blocked:false,wallet:0,wallet_balance:0}).eq("phone",phone); loadAll(); alert("Unblocked Wallet 0!"); };
+const unblockRiderNow=async(phone:string)=>{ await supabase.from("riders").update({is_blocked:false,wallet:0}).eq("phone",phone); loadAll(); alert("Unblocked Wallet 0!"); };
 const toggleRider=async(id:string,status:string)=>{ await supabase.from("riders").update({status:status==="BANNED"?"OFFLINE":"BANNED"}).eq("id",id); loadAll(); };
-const toggleShop=async(id:string,status:string)=>{ await supabase.from("shops").update({status:status==="BANNED"?"ACTIVE":"BANNED"}).eq("id",id); loadAll(); };
+const toggleShop=async(id:string,status:string)=>{ await supabase.from("sellers").update({status:status==="BANNED"?"ACTIVE":"BANNED"}).eq("id",id); loadAll(); };
 const removeProduct=async(id:string)=>{ if(!confirm("Remove product?"))return; await supabase.from("products").delete().eq("id",id); loadAll(); };
 
 if(!auth){
@@ -108,4 +104,4 @@ return(
 {tab==="riders"&&riders.map((r:any)=>(<div key={r.id} style={{background:"#0a0a0a",border:r.is_blocked?"1px solid red":"1px solid #222",borderRadius:12,padding:10,marginBottom:6,display:"flex",justifyContent:"space-between"}}><div style={{fontSize:11}}>{r.name} • {r.phone} • {r.status} {r.is_blocked&&<span style={{color:"red"}}> BLOCKED Rs.{r.wallet}</span>}</div><button onClick={()=>unblockRiderNow(r.phone)} style={{background:"#00C851",color:"#fff",border:"none",padding:"5px 8px",borderRadius:999,fontSize:8}}>UNBLOCK 0</button></div>))}
 </div></div>
 );
-}
+ }
